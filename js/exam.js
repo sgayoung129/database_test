@@ -347,22 +347,46 @@ function createEssayForm(question) {
 
 function createSQLForm(question) {
     let html = '';
-    if (question.schema) {
-        html += `
-            <div class="schema-info">
-                <h4>스키마 정보:</h4>
-                <pre>${question.schema}</pre>
-            </div>
-        `;
-    }
-    if (question.sampleData) {
-        html += `
-            <div class="sample-data">
-                <h4>샘플 데이터:</h4>
-                <p>${question.sampleData}</p>
-            </div>
-        `;
-    }
+    
+    // 모든 SQL 문제에 공통 스키마 정보 표시
+    html += `
+        <div class="schema-info">
+            <h4>공통 스키마:</h4>
+            <pre>CREATE TABLE Students (
+  sid INT PRIMARY KEY,
+  name VARCHAR(50) NOT NULL,
+  dept VARCHAR(20),
+  admit_year INT
+);
+
+CREATE TABLE Courses (
+  cid INT PRIMARY KEY,
+  title VARCHAR(100),
+  dept VARCHAR(20),
+  credits INT
+);
+
+CREATE TABLE Enroll (
+  sid INT,
+  cid INT,
+  grade CHAR(2),
+  PRIMARY KEY (sid, cid),
+  FOREIGN KEY (sid) REFERENCES Students(sid),
+  FOREIGN KEY (cid) REFERENCES Courses(cid)
+);</pre>
+        </div>
+    `;
+    
+    // 공통 샘플 데이터 표시
+    html += `
+        <div class="sample-data">
+            <h4>샘플 데이터:</h4>
+            <p><strong>Students:</strong> (1,'Kim','CS',2023), (2,'Lee','IS',2024), (3,'Park','CS',2024)</p>
+            <p><strong>Courses:</strong> (10,'DB Basics','CS',3), (20,'Python','IS',3), (30,'SQL Functions','CS',2)</p>
+            <p><strong>Enroll:</strong> (1,10,'A'), (1,20,'B'), (2,10,'B'), (3,30,'A')</p>
+        </div>
+    `;
+    
     html += `
         <div class="answer-input">
             <textarea name="answer" rows="8" placeholder="SQL 쿼리를 입력하세요..." 
