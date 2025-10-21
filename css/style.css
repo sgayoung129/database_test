@@ -817,10 +817,10 @@ tr:hover {
     font-size: 18px;
 }
 
-/* 시험 컨테이너 - 450px 네비게이션 */
+/* 시험 컨테이너 - 400px 네비게이션 */
 .exam-container {
     display: grid;
-    grid-template-columns: 450px 1fr;
+    grid-template-columns: 400px 1fr;
     gap: 25px;
     height: calc(100vh - 180px);
     max-width: 100%;
@@ -1035,35 +1035,43 @@ tr:hover {
     line-height: 1.4;
 }
 
-/* 문제 컨트롤 */
+/* 문제 컨트롤 - 더 넓은 버튼 영역 */
 .question-controls {
     position: fixed;
     bottom: 20px;
     right: 20px;
     display: flex;
-    gap: 10px;
+    gap: 12px;
     background: white;
-    padding: 15px;
-    border-radius: 8px;
+    padding: 18px 25px;
+    border-radius: 10px;
     box-shadow: 0 4px 20px rgba(0,0,0,0.15);
+    min-width: 280px;
 }
 
 .question-controls .nav-btn {
     width: auto;
     height: auto;
-    padding: 10px 20px;
+    padding: 12px 25px;
     font-size: 14px;
+    font-weight: 600;
+    min-width: 80px;
+    border-radius: 8px;
+    white-space: nowrap;
 }
 
 .submit-btn {
     background: #e74c3c;
     color: white;
     border: none;
-    padding: 12px 25px;
-    border-radius: 6px;
+    padding: 12px 30px;
+    border-radius: 8px;
     font-weight: 600;
     cursor: pointer;
     transition: background 0.2s;
+    min-width: 100px;
+    font-size: 14px;
+    white-space: nowrap;
 }
 
 .submit-btn:hover {
@@ -1357,15 +1365,32 @@ tr:hover {
     background: #5a67d8;
 }
 
-/* 반응형 디자인 - 450px 기준 조정 */
-@media (max-width: 1600px) {
+/* 반응형 디자인 - 400px 기준 조정 */
+@media (max-width: 1500px) {
     .exam-container {
-        grid-template-columns: 400px 1fr;
+        grid-template-columns: 380px 1fr;
         gap: 20px;
     }
     
     .question-content {
         padding: 30px 40px;
+    }
+    
+    .nav-btn {
+        max-width: 60px;
+        max-height: 60px;
+        font-size: 13px;
+    }
+}
+
+@media (max-width: 1300px) {
+    .exam-container {
+        grid-template-columns: 360px 1fr;
+        gap: 20px;
+    }
+    
+    .question-content {
+        padding: 25px 35px;
     }
     
     .nav-btn {
@@ -1375,26 +1400,9 @@ tr:hover {
     }
 }
 
-@media (max-width: 1400px) {
-    .exam-container {
-        grid-template-columns: 380px 1fr;
-        gap: 20px;
-    }
-    
-    .question-content {
-        padding: 25px 35px;
-    }
-    
-    .nav-btn {
-        max-width: 50px;
-        max-height: 50px;
-        font-size: 13px;
-    }
-}
-
 @media (max-width: 1200px) {
     .exam-container {
-        grid-template-columns: 350px 1fr;
+        grid-template-columns: 340px 1fr;
         gap: 15px;
     }
     
@@ -1407,8 +1415,8 @@ tr:hover {
     }
     
     .nav-btn {
-        max-width: 60px;
-        max-height: 60px;
+        max-width: 50px;
+        max-height: 50px;
         font-size: 12px;
     }
 }
@@ -1493,6 +1501,20 @@ tr:hover {
         margin-top: 20px;
         justify-content: center;
         order: 3;
+        min-width: auto;
+        padding: 15px 20px;
+    }
+    
+    .question-controls .nav-btn {
+        min-width: 70px;
+        padding: 10px 20px;
+        font-size: 13px;
+    }
+    
+    .submit-btn {
+        min-width: 90px;
+        padding: 10px 25px;
+        font-size: 13px;
     }
 }
     
