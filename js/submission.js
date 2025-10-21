@@ -1,3 +1,32 @@
+// 시험 시작 함수
+function startExam() {
+    const name = prompt('시험을 시작하기 전에 성명을 입력해주세요:');
+    if (name && name.trim()) {
+        // 시험 페이지로 이동 (학생 이름을 URL 파라미터로 전달)
+        window.location.href = `exam.html?student=${encodeURIComponent(name.trim())}`;
+    } else if (name !== null) {
+        alert('성명을 입력해주세요.');
+    }
+}
+
+// 제출 폼 보이기
+function showSubmissionForm() {
+    document.querySelector('.exam-menu').style.display = 'none';
+    document.getElementById('submissionSection').style.display = 'block';
+}
+
+// 메인 메뉴로 돌아가기
+function showMainMenu() {
+    document.querySelector('.exam-menu').style.display = 'block';
+    document.getElementById('submissionSection').style.display = 'none';
+    
+    // 폼 초기화
+    document.getElementById('submissionForm').reset();
+    document.getElementById('fileName').textContent = '';
+    document.getElementById('submissionMessage').textContent = '';
+    document.getElementById('submissionMessage').className = 'message';
+}
+
 document.addEventListener('DOMContentLoaded', function() {
     const form = document.getElementById('submissionForm');
     const fileInput = document.getElementById('file');

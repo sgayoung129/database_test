@@ -9,8 +9,26 @@
 <body>
     <div class="container">
         <div class="submission-container">
-            <h1>데이터베이스 시험 제출 시스템</h1>
-            <h2>시험 과제 제출</h2>
+            <h1>데이터베이스 시험 시스템</h1>
+            
+            <!-- 시험 메뉴 -->
+            <div class="exam-menu">
+                <div class="menu-item">
+                    <h2>📝 온라인 시험</h2>
+                    <p>26문항 / 60분 / 총 100점</p>
+                    <button onclick="startExam()" class="exam-btn">시험 시작</button>
+                </div>
+                
+                <div class="menu-item">
+                    <h2>📁 과제 제출</h2>
+                    <p>시험 관련 파일 업로드</p>
+                    <button onclick="showSubmissionForm()" class="submit-form-btn">제출 페이지</button>
+                </div>
+            </div>
+            
+            <!-- 파일 제출 폼 (숨김 처리) -->
+            <div id="submissionSection" class="submission-section" style="display: none;">
+                <h2>시험 과제 제출</h2>
             
             <form id="submissionForm" class="submission-form" enctype="multipart/form-data">
                 <div class="form-group">
@@ -52,12 +70,16 @@
                 
                 <button type="submit" class="submit-btn">제출하기</button>
                 
-                <div class="admin-link">
-                    <a href="admin.html">관리자 페이지</a>
-                </div>
+                <button onclick="showMainMenu()" class="back-btn">메인으로 돌아가기</button>
             </form>
             
             <div id="submissionMessage" class="message"></div>
+            </div>
+            
+            <!-- 관리자 링크 -->
+            <div class="admin-link">
+                <a href="admin.html">관리자 페이지</a>
+            </div>
         </div>
     </div>
     
