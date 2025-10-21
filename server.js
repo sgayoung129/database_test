@@ -6,7 +6,7 @@ const { Pool } = require('pg');
 require('dotenv').config();
 
 const app = express();
-const PORT = process.env.PORT || 3000;
+const PORT = process.env.PORT || 10000;
 
 // PostgreSQL 연결 설정
 const pool = new Pool({
@@ -85,6 +85,19 @@ async function initDatabase() {
 // 라우트 설정
 app.get('/', (req, res) => {
     res.sendFile(path.join(__dirname, 'public', 'index.html'));
+});
+
+// 모든 HTML 페이지 라우트
+app.get('/admin.html', (req, res) => {
+    res.sendFile(path.join(__dirname, 'public', 'admin.html'));
+});
+
+app.get('/exam.html', (req, res) => {
+    res.sendFile(path.join(__dirname, 'public', 'exam.html'));
+});
+
+app.get('/results.html', (req, res) => {
+    res.sendFile(path.join(__dirname, 'public', 'results.html'));
 });
 
 // 제출 처리
