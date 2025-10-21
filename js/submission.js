@@ -27,61 +27,41 @@ async function startExamWithForm() {
         return;
     }
     
-    try {
-        // 서버에서 시험 시도 횟수 확인
-        const response = await fetch(`/api/student-attempts/${encodeURIComponent(name)}`);
-        const data = await response.json();
-        
-        if (data.success) {
-            const currentAttempt = data.currentAttempts + 1;
-            const MAX_ATTEMPTS = 3;
-            
-            if (!data.canTakeExam) {
-                alert(`${name}님은 이미 ${MAX_ATTEMPTS}회 시험을 완료하셨습니다. 더 이상 시험을 볼 수 없습니다.`);
-                return;
-            }
-            
-            if (confirm(`${name}님의 ${currentAttempt}/${MAX_ATTEMPTS}회차 시험을 시작하시겠습니까?\n전화번호: ${phone}`)) {
-                // 시험 페이지로 이동 (학생 이름을 URL 파라미터로 전달)
-                window.location.href = `exam.html?student=${encodeURIComponent(name)}&phone=${encodeURIComponent(phone)}`;
-            }
-        } else {
-            throw new Error(data.message || '시도 횟수 확인 실패');
-        }
-    } catch (error) {
-        console.error('시험 시도 횟수 확인 오류:', error);
-        alert('시험 시도 횟수 확인 중 오류가 발생했습니다. 잠시 후 다시 시도해주세요.');
+    // localStorage에서 시험 시도 횟수 확인
+    const studentAttempts = JSON.parse(localStorage.getItem('examAttempts') || '{}');
+    const currentAttempts = studentAttempts[name] || 0;
+    const currentAttempt = currentAttempts + 1;
+    const MAX_ATTEMPTS = 3;
+    
+    if (currentAttempts >= MAX_ATTEMPTS) {
+        alert(`${name}님은 이미 ${MAX_ATTEMPTS}회 시험을 완료하셨습니다. 더 이상 시험을 볼 수 없습니다.`);
+        return;
+    }
+    
+    if (confirm(`${name}님의 ${currentAttempt}/${MAX_ATTEMPTS}회차 시험을 시작하시겠습니까?\n전화번호: ${phone}`)) {
+        // 시험 페이지로 이동 (학생 이름을 URL 파라미터로 전달)
+        window.location.href = `exam.html?student=${encodeURIComponent(name)}&phone=${encodeURIComponent(phone)}`;
     }
 }
 
 // 기존 시험 시작 함수 (호환성 유지)
-async function startExam() {
+function startExam() {
     const name = prompt('시험을 시작하기 전에 성명을 입력해주세요:');
     if (name && name.trim()) {
-        try {
-            // 서버에서 시험 시도 횟수 확인
-            const response = await fetch(`/api/student-attempts/${encodeURIComponent(name.trim())}`);
-            const data = await response.json();
-            
-            if (data.success) {
-                const currentAttempt = data.currentAttempts + 1;
-                const MAX_ATTEMPTS = 3;
-                
-                if (!data.canTakeExam) {
-                    alert(`${name.trim()}님은 이미 ${MAX_ATTEMPTS}회 시험을 완료하셨습니다. 더 이상 시험을 볼 수 없습니다.`);
-                    return;
-                }
-                
-                if (confirm(`${name.trim()}님의 ${currentAttempt}/${MAX_ATTEMPTS}회차 시험을 시작하시겠습니까?`)) {
-                    // 시험 페이지로 이동 (학생 이름을 URL 파라미터로 전달)
-                    window.location.href = `exam.html?student=${encodeURIComponent(name.trim())}`;
-                }
-            } else {
-                throw new Error(data.message || '시도 횟수 확인 실패');
-            }
-        } catch (error) {
-            console.error('시험 시도 횟수 확인 오류:', error);
-            alert('시험 시도 횟수 확인 중 오류가 발생했습니다. 잠시 후 다시 시도해주세요.');
+        // localStorage에서 시험 시도 횟수 확인
+        const studentAttempts = JSON.parse(localStorage.getItem('examAttempts') || '{}');
+        const currentAttempts = studentAttempts[name.trim()] || 0;
+        const currentAttempt = currentAttempts + 1;
+        const MAX_ATTEMPTS = 3;
+        
+        if (currentAttempts >= MAX_ATTEMPTS) {
+            alert(`${name.trim()}님은 이미 ${MAX_ATTEMPTS}회 시험을 완료하셨습니다. 더 이상 시험을 볼 수 없습니다.`);
+            return;
+        }
+        
+        if (confirm(`${name.trim()}님의 ${currentAttempt}/${MAX_ATTEMPTS}회차 시험을 시작하시겠습니까?`)) {
+            // 시험 페이지로 이동 (학생 이름을 URL 파라미터로 전달)
+            window.location.href = `exam.html?student=${encodeURIComponent(name.trim())}`;
         }
     } else if (name !== null) {
         alert('성명을 입력해주세요.');
