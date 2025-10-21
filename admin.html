@@ -29,6 +29,7 @@
             <div id="adminPanel" class="admin-panel" style="display: none;">
                 <div class="admin-nav">
                     <button class="nav-tab active" data-tab="submissions">제출 관리</button>
+                    <button class="nav-tab" data-tab="examResults">시험 결과</button>
                     <button class="nav-tab" data-tab="statistics">통계</button>
                     <button id="logoutBtn" class="logout-btn">로그아웃</button>
                 </div>
@@ -53,6 +54,35 @@
                                 </tr>
                             </thead>
                             <tbody id="submissionsTableBody">
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+                
+                <div id="examResultsTab" class="tab-content">
+                    <h2>시험 결과 관리</h2>
+                    <div class="exam-controls">
+                        <button id="refreshExamResults" class="refresh-btn">결과 새로고침</button>
+                        <button id="resetAllAttempts" class="reset-btn">모든 시도 횟수 초기화</button>
+                        <span id="examTotalCount" class="total-count">총 0개 결과</span>
+                    </div>
+                    <div class="exam-results-list">
+                        <table id="examResultsTable">
+                            <thead>
+                                <tr>
+                                    <th>학생명</th>
+                                    <th>시도 횟수</th>
+                                    <th>점수</th>
+                                    <th>백분율</th>
+                                    <th>A형 점수</th>
+                                    <th>B형 점수</th>
+                                    <th>C형 점수</th>
+                                    <th>소요 시간</th>
+                                    <th>제출 시간</th>
+                                    <th>상세보기</th>
+                                </tr>
+                            </thead>
+                            <tbody id="examResultsTableBody">
                             </tbody>
                         </table>
                     </div>

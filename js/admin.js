@@ -4,6 +4,8 @@ document.addEventListener('DOMContentLoaded', function() {
     const adminLoginForm = document.getElementById('adminLoginForm');
     const logoutBtn = document.getElementById('logoutBtn');
     const refreshBtn = document.getElementById('refreshBtn');
+    const refreshExamResults = document.getElementById('refreshExamResults');
+    const resetAllAttempts = document.getElementById('resetAllAttempts');
 
     // 간단한 관리자 비밀번호
     const ADMIN_PASSWORD = 'admin123';
@@ -21,6 +23,7 @@ document.addEventListener('DOMContentLoaded', function() {
             loginSection.style.display = 'none';
             adminPanel.style.display = 'block';
             loadSubmissions();
+            loadExamResults();
         } else {
             alert('비밀번호가 올바르지 않습니다.');
         }
@@ -50,11 +53,26 @@ document.addEventListener('DOMContentLoaded', function() {
             if (targetTab === 'statistics') {
                 loadStatistics();
             }
+            // 시험 결과 탭이 선택되면 시험 결과 로드
+            if (targetTab === 'examResults') {
+                loadExamResults();
+            }
         });
     });
 
     // 새로고침 버튼
     refreshBtn.addEventListener('click', loadSubmissions);
+    refreshExamResults.addEventListener('click', loadExamResults);
+    
+    // 모든 시도 횟수 초기화
+    resetAllAttempts.addEventListener('click', function() {
+        if (confirm('모든 학생의 시도 횟수를 초기화하시겠습니까? 이 작업은 되돌릴 수 없습니다.')) {
+            localStorage.removeItem('examAttempts');
+            localStorage.removeItem('allExamResults');
+            alert('모든 시도 횟수와 시험 결과가 초기화되었습니다.');
+            loadExamResults();
+        }
+    });
 
     // 제출 데이터 로드
     async function loadSubmissions() {
@@ -161,6 +179,89 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
 
+    // 시험 결과 로드
+    function loadExamResults() {
+        const allResults = JSON.parse(localStorage.getItem('allExamResults') || '[]');
+        displayExamResults(allResults);
+        updateExamTotalCount(allResults.length);
+    }
+
+    // 시험 결과 표시
+    function displayExamResults(results) {
+        const tbody = document.getElementById('examResultsTableBody');
+        tbody.innerHTML = '';
+        
+        if (results.length === 0) {
+            tbody.innerHTML = '<tr><td colspan="10" style="text-align: center; color: #999;">시험 결과가 없습니다.</td></tr>';
+            return;
+        }
+        
+        // 학생별로 그룹화하여 표시
+        const groupedResults = groupResultsByStudent(results);
+        
+        Object.keys(groupedResults).forEach(studentName => {
+            const studentResults = groupedResults[studentName];
+            studentResults.forEach((result, index) => {
+                const row = document.createElement('tr');
+                const timeSpent = formatTimeSpent(result.timeSpent);
+                
+                row.innerHTML = `
+                    <td>${index === 0 ? `<strong>${studentName}</strong>` : ''}</td>
+                    <td>${result.attempt}차</td>
+                    <td><strong>${result.score}점</strong></td>
+                    <td>${result.percentage}%</td>
+                    <td>${result.categoryScores['A형'].score}/${result.categoryScores['A형'].total}</td>
+                    <td>${result.categoryScores['B형'].score}/${result.categoryScores['B형'].total}</td>
+                    <td>${result.categoryScores['C형'].score}/${result.categoryScores['C형'].total}</td>
+                    <td>${timeSpent}</td>
+                    <td>${formatDateTime(result.timestamp)}</td>
+                    <td><button onclick="showExamDetails('${studentName}', ${result.attempt})" class="detail-btn">상세보기</button></td>
+                `;
+                
+                // 점수에 따른 색상 적용
+                if (result.percentage >= 80) {
+                    row.style.backgroundColor = '#d4edda';
+                } else if (result.percentage >= 60) {
+                    row.style.backgroundColor = '#fff3cd';
+                } else {
+                    row.style.backgroundColor = '#f8d7da';
+                }
+                
+                tbody.appendChild(row);
+            });
+        });
+    }
+
+    // 학생별로 결과 그룹화
+    function groupResultsByStudent(results) {
+        const grouped = {};
+        results.forEach(result => {
+            if (!grouped[result.student]) {
+                grouped[result.student] = [];
+            }
+            grouped[result.student].push(result);
+        });
+        
+        // 각 학생의 결과를 시도 순서대로 정렬
+        Object.keys(grouped).forEach(student => {
+            grouped[student].sort((a, b) => a.attempt - b.attempt);
+        });
+        
+        return grouped;
+    }
+
+    // 시험 결과 총 개수 업데이트
+    function updateExamTotalCount(count) {
+        document.getElementById('examTotalCount').textContent = `총 ${count}개 결과`;
+    }
+
+    // 소요 시간 포맷팅
+    function formatTimeSpent(seconds) {
+        const minutes = Math.floor(seconds / 60);
+        const remainingSeconds = seconds % 60;
+        return `${minutes}분 ${remainingSeconds}초`;
+    }
+
     // 파일명 줄이기
     function truncateFilename(filename, maxLength = 20) {
         if (filename.length <= maxLength) return filename;
@@ -183,3 +284,66 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
 });
+
+// 시험 상세보기 (전역 함수)
+function showExamDetails(studentName, attempt) {
+    const allResults = JSON.parse(localStorage.getItem('allExamResults') || '[]');
+    const result = allResults.find(r => r.student === studentName && r.attempt === attempt);
+    
+    if (!result) {
+        alert('해당 시험 결과를 찾을 수 없습니다.');
+        return;
+    }
+    
+    let detailHtml = `
+        <div style="padding: 20px;">
+            <h3>${studentName}님의 ${attempt}차 시험 상세 결과</h3>
+            <div style="margin: 20px 0;">
+                <strong>총점:</strong> ${result.score}점 (${result.percentage}%)<br>
+                <strong>A형 점수:</strong> ${result.categoryScores['A형'].score}/${result.categoryScores['A형'].total}점<br>
+                <strong>B형 점수:</strong> ${result.categoryScores['B형'].score}/${result.categoryScores['B형'].total}점<br>
+                <strong>C형 점수:</strong> ${result.categoryScores['C형'].score}/${result.categoryScores['C형'].total}점<br>
+                <strong>소요 시간:</strong> ${Math.floor(result.timeSpent / 60)}분 ${result.timeSpent % 60}초<br>
+                <strong>제출 시간:</strong> ${new Date(result.timestamp).toLocaleString('ko-KR')}
+            </div>
+            
+            <h4>답안 내역:</h4>
+            <div style="max-height: 400px; overflow-y: auto; border: 1px solid #ddd; padding: 10px;">
+    `;
+    
+    // 답안 상세 표시
+    Object.keys(result.answers).forEach(questionIndex => {
+        const qIndex = parseInt(questionIndex);
+        const answer = result.answers[questionIndex];
+        detailHtml += `<p><strong>문제 ${qIndex + 1}:</strong> ${answer || '답안 없음'}</p>`;
+    });
+    
+    detailHtml += `
+            </div>
+        </div>
+    `;
+    
+    // 새 창으로 열기
+    const newWindow = window.open('', '_blank', 'width=600,height=700,scrollbars=yes');
+    newWindow.document.write(`
+        <!DOCTYPE html>
+        <html>
+        <head>
+            <title>시험 결과 상세보기</title>
+            <style>
+                body { font-family: Arial, sans-serif; margin: 0; }
+                h3 { color: #333; }
+                h4 { color: #666; margin-top: 20px; }
+                p { margin: 5px 0; }
+            </style>
+        </head>
+        <body>
+            ${detailHtml}
+            <div style="text-align: center; margin: 20px;">
+                <button onclick="window.close()" style="padding: 10px 20px; background: #007bff; color: white; border: none; border-radius: 5px; cursor: pointer;">창 닫기</button>
+            </div>
+        </body>
+        </html>
+    `);
+    newWindow.document.close();
+}

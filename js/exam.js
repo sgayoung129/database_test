@@ -242,6 +242,8 @@ let answers = {};
 let timeRemaining = examData.timeLimit * 60; // 초 단위
 let timer;
 let currentStudent = '';
+let currentAttempt = 1;
+const MAX_ATTEMPTS = 3;
 
 // 페이지 로드 시 초기화
 document.addEventListener('DOMContentLoaded', function() {
@@ -253,7 +255,18 @@ function initializeExam() {
     const urlParams = new URLSearchParams(window.location.search);
     currentStudent = urlParams.get('student') || '익명';
     
-    document.getElementById('currentStudent').textContent = currentStudent;
+    // 시험 시도 횟수 확인
+    const studentAttempts = JSON.parse(localStorage.getItem('examAttempts') || '{}');
+    currentAttempt = (studentAttempts[currentStudent] || 0) + 1;
+    
+    // 최대 시도 횟수 초과 확인
+    if (currentAttempt > MAX_ATTEMPTS) {
+        alert(`${currentStudent}님은 이미 ${MAX_ATTEMPTS}회 시험을 완료하셨습니다. 더 이상 시험을 볼 수 없습니다.`);
+        window.location.href = 'index.html';
+        return;
+    }
+    
+    document.getElementById('currentStudent').textContent = `${currentStudent} (${currentAttempt}/${MAX_ATTEMPTS}회차)`;
     
     // 시험 시작
     startTimer();
@@ -517,9 +530,18 @@ function submitExam() {
     // 점수 계산
     const results = calculateScore();
     
+    // 시도 횟수 업데이트
+    const studentAttempts = JSON.parse(localStorage.getItem('examAttempts') || '{}');
+    studentAttempts[currentStudent] = currentAttempt;
+    localStorage.setItem('examAttempts', JSON.stringify(studentAttempts));
+    
+    // 시험 결과 저장 (3번의 모든 결과 저장)
+    saveExamResult(results);
+    
     // 결과 페이지로 이동
     sessionStorage.setItem('examResults', JSON.stringify({
         student: currentStudent,
+        attempt: currentAttempt,
         answers: answers,
         results: results,
         examData: examData
@@ -561,4 +583,23 @@ function calculateScore() {
         percentage: Math.round((totalScore / 100) * 100),
         categoryScores: categoryScores
     };
+}
+
+function saveExamResult(results) {
+    // 모든 시험 결과를 localStorage에 저장
+    const allResults = JSON.parse(localStorage.getItem('allExamResults') || '[]');
+    
+    const resultData = {
+        student: currentStudent,
+        attempt: currentAttempt,
+        score: results.totalScore,
+        percentage: results.percentage,
+        categoryScores: results.categoryScores,
+        answers: answers,
+        timestamp: new Date().toISOString(),
+        timeSpent: (examData.timeLimit * 60) - timeRemaining
+    };
+    
+    allResults.push(resultData);
+    localStorage.setItem('allExamResults', JSON.stringify(allResults));
 }
