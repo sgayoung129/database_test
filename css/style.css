@@ -23,6 +23,14 @@ body.exam-page .container {
     align-items: flex-start;
 }
 
+/* 시험 전용 컨테이너 - 전체 화면 활용 */
+.exam-full-container {
+    max-width: 100%;
+    width: 100%;
+    margin: 0;
+    padding: 10px;
+}
+
 .container {
     max-width: 1200px;
     margin: 0 auto;
@@ -712,12 +720,14 @@ tr:hover {
     font-size: 18px;
 }
 
-/* 시험 컨테이너 */
+/* 시험 컨테이너 - 더 넓은 레이아웃 */
 .exam-container {
     display: grid;
-    grid-template-columns: 200px 1fr;
-    gap: 20px;
-    height: calc(100vh - 200px);
+    grid-template-columns: 220px 1fr;
+    gap: 25px;
+    height: calc(100vh - 180px);
+    max-width: 100%;
+    width: 100%;
 }
 
 /* 문제 네비게이션 */
@@ -775,13 +785,15 @@ tr:hover {
     border-color: #155724;
 }
 
-/* 문제 내용 영역 */
+/* 문제 내용 영역 - 더 넓고 편안한 공간 */
 .question-content {
     background: white;
-    padding: 30px;
+    padding: 35px 45px;
     border-radius: 8px;
     box-shadow: 0 2px 10px rgba(0,0,0,0.1);
     overflow-y: auto;
+    width: 100%;
+    max-width: none;
 }
 
 .question-header h3 {
@@ -827,14 +839,15 @@ tr:hover {
 
 .answer-input textarea {
     width: 100%;
-    padding: 15px;
+    padding: 20px;
     border: 2px solid #ddd;
     border-radius: 6px;
-    font-size: 14px;
+    font-size: 15px;
     font-family: inherit;
-    line-height: 1.5;
+    line-height: 1.6;
     resize: vertical;
-    min-height: 120px;
+    min-height: 150px;
+    max-width: none;
 }
 
 .answer-input textarea:focus {
@@ -843,28 +856,32 @@ tr:hover {
     box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
 }
 
-/* 스키마 정보 */
+/* 스키마 정보 - 더 넓은 공간 */
 .schema-info, .sample-data {
     background: #f8f9fa;
-    padding: 15px;
-    margin: 15px 0;
-    border-radius: 6px;
+    padding: 20px;
+    margin: 20px 0;
+    border-radius: 8px;
     border-left: 4px solid #667eea;
+    width: 100%;
 }
 
 .schema-info h4, .sample-data h4 {
     color: #667eea;
-    margin-bottom: 8px;
-    font-size: 14px;
+    margin-bottom: 12px;
+    font-size: 16px;
+    font-weight: 600;
 }
 
 .schema-info pre {
     background: #2d3748;
     color: #e2e8f0;
-    padding: 10px;
-    border-radius: 4px;
-    font-size: 12px;
+    padding: 15px;
+    border-radius: 6px;
+    font-size: 13px;
     overflow-x: auto;
+    white-space: pre-wrap;
+    line-height: 1.4;
 }
 
 /* 문제 컨트롤 */
@@ -1189,20 +1206,41 @@ tr:hover {
     background: #5a67d8;
 }
 
-/* 반응형 디자인 */
+/* 반응형 디자인 - 더 넓은 화면 활용 */
+@media (max-width: 1200px) {
+    .exam-container {
+        grid-template-columns: 200px 1fr;
+        gap: 20px;
+    }
+    
+    .question-content {
+        padding: 25px 35px;
+    }
+}
+
 @media (max-width: 768px) {
     .exam-container {
         grid-template-columns: 1fr;
         grid-template-rows: auto 1fr;
+        gap: 15px;
     }
     
     .question-navigation {
         order: 2;
-        margin-top: 20px;
+        margin-top: 15px;
     }
     
     .question-nav {
         grid-template-columns: repeat(10, 1fr);
+    }
+    
+    .question-content {
+        padding: 20px;
+    }
+    
+    .answer-input textarea {
+        min-height: 120px;
+        padding: 15px;
     }
     
     .question-controls {

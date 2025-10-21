@@ -339,7 +339,8 @@ function createShortAnswerForm(question) {
 function createEssayForm(question) {
     return `
         <div class="answer-input">
-            <textarea name="answer" rows="8" placeholder="서술형 답안을 입력하세요..."></textarea>
+            <textarea name="answer" rows="10" placeholder="서술형 답안을 입력하세요..." 
+                style="min-height: 200px; font-size: 15px;"></textarea>
         </div>
     `;
 }
@@ -364,7 +365,8 @@ function createSQLForm(question) {
     }
     html += `
         <div class="answer-input">
-            <textarea name="answer" rows="6" placeholder="SQL 쿼리를 입력하세요..." style="font-family: 'Courier New', monospace;"></textarea>
+            <textarea name="answer" rows="8" placeholder="SQL 쿼리를 입력하세요..." 
+                style="font-family: 'Courier New', monospace; font-size: 14px; min-height: 180px;"></textarea>
         </div>
     `;
     return html;
