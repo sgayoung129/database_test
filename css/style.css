@@ -856,20 +856,21 @@ tr:hover {
     justify-content: space-between;
 }
 
-/* 문제 섹션별 네비게이션 - 넓은 공간 활용 */
+/* 문제 섹션별 네비게이션 - 오버플로우 방지 */
 .question-section {
     flex: 1;
     display: flex;
     flex-direction: column;
-    margin-bottom: 15px;
+    margin-bottom: 12px;
+    min-height: 0;
 }
 
 .question-section h5 {
     color: #495057;
-    font-size: 13px;
+    font-size: 12px;
     font-weight: 600;
-    margin-bottom: 10px;
-    padding: 8px 12px;
+    margin-bottom: 8px;
+    padding: 6px 10px;
     background: #f8f9fa;
     border-radius: 4px;
     text-align: center;
@@ -880,16 +881,22 @@ tr:hover {
 .section-nav {
     display: grid;
     grid-template-columns: repeat(5, 1fr);
-    gap: 8px;
+    gap: 6px;
     flex: 1;
     align-content: start;
+    min-height: 0;
+}
+
+/* A형 섹션 (8개 버튼) - 4열 그리드 */
+.section-nav-4 {
+    grid-template-columns: repeat(4, 1fr);
 }
 
 .nav-btn {
     width: 100%;
     aspect-ratio: 1;
-    max-width: 60px;
-    max-height: 60px;
+    max-width: 70px;
+    max-height: 70px;
     border: 2px solid #ddd;
     background: #f8f9fa;
     border-radius: 8px;
@@ -901,7 +908,8 @@ tr:hover {
     align-items: center;
     justify-content: center;
     color: #495057;
-    min-height: 45px;
+    min-height: 40px;
+    box-sizing: border-box;
 }
 
 .nav-btn:hover {
@@ -1391,12 +1399,16 @@ tr:hover {
     }
     
     .section-nav {
-        gap: 6px;
+        gap: 5px;
+    }
+    
+    .section-nav-4 {
+        grid-template-columns: repeat(4, 1fr);
     }
     
     .nav-btn {
-        max-width: 45px;
-        max-height: 45px;
+        max-width: 60px;
+        max-height: 60px;
         font-size: 12px;
     }
 }
@@ -1408,13 +1420,17 @@ tr:hover {
     }
     
     .section-nav {
-        gap: 5px;
+        gap: 4px;
+    }
+    
+    .section-nav-4 {
+        grid-template-columns: repeat(4, 1fr);
     }
     
     .nav-btn {
-        max-width: 40px;
-        max-height: 40px;
-        font-size: 12px;
+        max-width: 55px;
+        max-height: 55px;
+        font-size: 11px;
     }
 }
 
@@ -1429,18 +1445,18 @@ tr:hover {
     .question-navigation {
         order: 2;
         margin-top: 15px;
-        height: 280px;
-        padding: 10px;
+        height: 300px;
+        padding: 12px;
     }
     
     .question-section {
-        margin-bottom: 6px;
+        margin-bottom: 8px;
     }
     
     .question-section h5 {
         font-size: 10px;
-        padding: 3px 6px;
-        margin-bottom: 4px;
+        padding: 4px 8px;
+        margin-bottom: 6px;
     }
     
     .section-nav {
@@ -1448,11 +1464,15 @@ tr:hover {
         gap: 3px;
     }
     
+    .section-nav-4 {
+        grid-template-columns: repeat(4, 1fr);
+    }
+    
     .nav-btn {
-        max-width: 35px;
-        max-height: 35px;
-        min-height: 28px;
-        font-size: 11px;
+        max-width: 50px;
+        max-height: 50px;
+        min-height: 32px;
+        font-size: 10px;
         border-radius: 4px;
     }
     
