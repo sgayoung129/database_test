@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>관리자 페이지</title>
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+    <div class="container">
+        <div class="admin-container">
+            <h1>데이터베이스 시험 관리 시스템</h1>
+            
+            <div id="loginSection" class="admin-login">
+                <h2>관리자 페이지</h2>
+                <p>간단한 인증으로 관리자 페이지에 접근합니다.</p>
+                <form id="adminLoginForm">
+                    <div class="form-group">
+                        <label for="adminPassword">관리자 비밀번호:</label>
+                        <input type="password" id="adminPassword" placeholder="admin123" required>
+                    </div>
+                    <button type="submit">접속하기</button>
+                </form>
+                <div class="student-link">
+                    <a href="index.html">제출 페이지로 돌아가기</a>
+                </div>
+            </div>
+            
+            <div id="adminPanel" class="admin-panel" style="display: none;">
+                <div class="admin-nav">
+                    <button class="nav-tab active" data-tab="submissions">제출 관리</button>
+                    <button class="nav-tab" data-tab="statistics">통계</button>
+                    <button id="logoutBtn" class="logout-btn">로그아웃</button>
+                </div>
+                
+                <div id="submissionsTab" class="tab-content active">
+                    <h2>제출 현황</h2>
+                    <div class="submissions-controls">
+                        <button id="refreshBtn" class="refresh-btn">새로고침</button>
+                        <span id="totalCount" class="total-count">총 0개 제출</span>
+                    </div>
+                    <div class="submissions-list">
+                        <table id="submissionsTable">
+                            <thead>
+                                <tr>
+                                    <th>ID</th>
+                                    <th>이름</th>
+                                    <th>전화번호</th>
+                                    <th>이메일</th>
+                                    <th>첨부파일</th>
+                                    <th>제출시간</th>
+                                    <th>다운로드</th>
+                                </tr>
+                            </thead>
+                            <tbody id="submissionsTableBody">
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+                
+                <div id="statisticsTab" class="tab-content">
+                    <h2>제출 통계</h2>
+                    <div class="statistics-summary">
+                        <div class="stat-cards">
+                            <div class="stat-card">
+                                <h3>총 제출 수</h3>
+                                <span id="totalSubmissions" class="stat-number">0</span>
+                            </div>
+                            <div class="stat-card">
+                                <h3>파일 첨부</h3>
+                                <span id="withFiles" class="stat-number">0</span>
+                            </div>
+                            <div class="stat-card">
+                                <h3>오늘 제출</h3>
+                                <span id="todaySubmissions" class="stat-number">0</span>
+                            </div>
+                        </div>
+                        
+                        <div class="recent-submissions">
+                            <h3>최근 제출</h3>
+                            <div id="recentSubmissionsList"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <script src="js/admin.js"></script>
+</body>
+</html>
