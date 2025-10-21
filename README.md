@@ -201,4 +201,4 @@ aebonlee
 문제가 계속 발생하면:
 1. Render.com 로그 확인
 2. 브라우저 개발자 도구 콘솔 확인
-3. GitHub Issues에 문제 보고
+3. GitHub Issues에 문제 보고# Force deployment
