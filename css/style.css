@@ -817,10 +817,10 @@ tr:hover {
     font-size: 18px;
 }
 
-/* 시험 컨테이너 - 개선된 레이아웃 */
+/* 시험 컨테이너 - 350px 네비게이션 */
 .exam-container {
     display: grid;
-    grid-template-columns: 280px 1fr;
+    grid-template-columns: 350px 1fr;
     gap: 25px;
     height: calc(100vh - 180px);
     max-width: 100%;
@@ -865,15 +865,15 @@ tr:hover {
 
 .section-nav {
     display: grid;
-    grid-template-columns: repeat(4, 1fr);
-    gap: 8px;
+    grid-template-columns: repeat(5, 1fr);
+    gap: 10px;
 }
 
 .nav-btn {
-    width: 45px;
-    height: 45px;
+    width: 50px;
+    height: 50px;
     border: 2px solid #ddd;
-    background: white;
+    background: #f8f9fa;
     border-radius: 8px;
     cursor: pointer;
     font-weight: 600;
@@ -882,11 +882,14 @@ tr:hover {
     display: flex;
     align-items: center;
     justify-content: center;
+    color: #495057;
 }
 
 .nav-btn:hover {
-    background: #f8f9fa;
+    background: #e9ecef;
     border-color: #667eea;
+    transform: translateY(-1px);
+    box-shadow: 0 2px 8px rgba(102, 126, 234, 0.2);
 }
 
 .nav-btn.current {
@@ -1327,10 +1330,10 @@ tr:hover {
     background: #5a67d8;
 }
 
-/* 반응형 디자인 - 개선된 반응형 */
-@media (max-width: 1200px) {
+/* 반응형 디자인 - 350px 기준 조정 */
+@media (max-width: 1400px) {
     .exam-container {
-        grid-template-columns: 250px 1fr;
+        grid-template-columns: 320px 1fr;
         gap: 20px;
     }
     
@@ -1339,25 +1342,42 @@ tr:hover {
     }
     
     .nav-btn {
-        width: 40px;
-        height: 40px;
+        width: 45px;
+        height: 45px;
         font-size: 13px;
     }
 }
 
-@media (max-width: 900px) {
+@media (max-width: 1200px) {
     .exam-container {
-        grid-template-columns: 220px 1fr;
+        grid-template-columns: 300px 1fr;
         gap: 15px;
     }
     
     .section-nav {
-        grid-template-columns: repeat(3, 1fr);
+        grid-template-columns: repeat(4, 1fr);
     }
     
     .nav-btn {
-        width: 38px;
-        height: 38px;
+        width: 42px;
+        height: 42px;
+        font-size: 13px;
+    }
+}
+
+@media (max-width: 1000px) {
+    .exam-container {
+        grid-template-columns: 280px 1fr;
+        gap: 15px;
+    }
+    
+    .section-nav {
+        grid-template-columns: repeat(4, 1fr);
+    }
+    
+    .nav-btn {
+        width: 40px;
+        height: 40px;
         font-size: 12px;
     }
 }
