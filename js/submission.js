@@ -1,4 +1,60 @@
-// 시험 시작 함수
+// 새로운 폼 기반 시험 시작 함수
+async function startExamWithForm() {
+    const nameInput = document.getElementById('examStudentName');
+    const phoneInput = document.getElementById('examStudentPhone');
+    
+    const name = nameInput.value.trim();
+    const phone = phoneInput.value.trim();
+    
+    // 입력 검증
+    if (!name) {
+        alert('성명을 입력해주세요.');
+        nameInput.focus();
+        return;
+    }
+    
+    if (!phone) {
+        alert('전화번호를 입력해주세요.');
+        phoneInput.focus();
+        return;
+    }
+    
+    // 전화번호 형식 검증
+    const phoneRegex = /^010-\d{4}-\d{4}$/;
+    if (!phoneRegex.test(phone)) {
+        alert('전화번호를 010-1234-5678 형식으로 입력해주세요.');
+        phoneInput.focus();
+        return;
+    }
+    
+    try {
+        // 서버에서 시험 시도 횟수 확인
+        const response = await fetch(`/api/student-attempts/${encodeURIComponent(name)}`);
+        const data = await response.json();
+        
+        if (data.success) {
+            const currentAttempt = data.currentAttempts + 1;
+            const MAX_ATTEMPTS = 3;
+            
+            if (!data.canTakeExam) {
+                alert(`${name}님은 이미 ${MAX_ATTEMPTS}회 시험을 완료하셨습니다. 더 이상 시험을 볼 수 없습니다.`);
+                return;
+            }
+            
+            if (confirm(`${name}님의 ${currentAttempt}/${MAX_ATTEMPTS}회차 시험을 시작하시겠습니까?\n전화번호: ${phone}`)) {
+                // 시험 페이지로 이동 (학생 이름을 URL 파라미터로 전달)
+                window.location.href = `exam.html?student=${encodeURIComponent(name)}&phone=${encodeURIComponent(phone)}`;
+            }
+        } else {
+            throw new Error(data.message || '시도 횟수 확인 실패');
+        }
+    } catch (error) {
+        console.error('시험 시도 횟수 확인 오류:', error);
+        alert('시험 시도 횟수 확인 중 오류가 발생했습니다. 잠시 후 다시 시도해주세요.');
+    }
+}
+
+// 기존 시험 시작 함수 (호환성 유지)
 async function startExam() {
     const name = prompt('시험을 시작하기 전에 성명을 입력해주세요:');
     if (name && name.trim()) {
@@ -203,4 +259,25 @@ document.addEventListener('DOMContentLoaded', function() {
         
         e.target.value = formattedValue;
     });
+    
+    // 시험 시작 폼의 전화번호 포맷팅
+    const examPhoneInput = document.getElementById('examStudentPhone');
+    if (examPhoneInput) {
+        examPhoneInput.addEventListener('input', function(e) {
+            let value = e.target.value.replace(/\D/g, '');
+            let formattedValue = '';
+            
+            if (value.length > 0) {
+                if (value.length <= 3) {
+                    formattedValue = value;
+                } else if (value.length <= 7) {
+                    formattedValue = value.slice(0, 3) + '-' + value.slice(3);
+                } else {
+                    formattedValue = value.slice(0, 3) + '-' + value.slice(3, 7) + '-' + value.slice(7, 11);
+                }
+            }
+            
+            e.target.value = formattedValue;
+        });
+    }
 });
