@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>데이터베이스 시험</title>
+    <link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+    <div class="container">
+        <div class="exam-header">
+            <h1>데이터베이스 시험</h1>
+            <div class="exam-info">
+                <span id="studentInfo">학생: <span id="currentStudent"></span></span>
+                <span id="timeRemaining">남은 시간: <span id="timer">60:00</span></span>
+            </div>
+        </div>
+        
+        <div class="exam-container">
+            <div class="question-navigation">
+                <div id="questionNumbers"></div>
+            </div>
+            
+            <div class="question-content">
+                <div id="currentQuestion">
+                    <h3 id="questionTitle">문제 1</h3>
+                    <div id="questionText"></div>
+                    <div id="answerOptions"></div>
+                </div>
+                
+                <div class="question-controls">
+                    <button id="prevBtn" class="nav-btn">이전</button>
+                    <button id="nextBtn" class="nav-btn">다음</button>
+                    <button id="submitBtn" class="submit-btn">시험 제출</button>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <script src="../js/exam.js"></script>
+</body>
+</html>

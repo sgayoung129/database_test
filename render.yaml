@@ -1,0 +1,18 @@
+services:
+  - type: web
+    name: database-test-website
+    env: node
+    buildCommand: npm install
+    startCommand: npm start
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: DB_HOST
+        value: dpg-d3rstnggjchc73e5tbeg-a.singapore-postgres.render.com
+      - key: DB_NAME
+        value: database_test_db
+      - key: DB_USER
+        value: database_test_user
+      - key: DB_PORT
+        value: 5432
+      # DB_PASSWORD는 Render.com 대시보드에서 환경 변수로 설정해야 합니다.
