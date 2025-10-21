@@ -13,27 +13,33 @@
             
             <div class="result-summary">
                 <div class="score-display">
-                    <h2>총점: <span id="totalScore">0</span>/100</h2>
+                    <h2>총점: <span id="totalScore">0</span>/100점</h2>
                     <div class="score-bar">
                         <div id="scoreBar" class="score-fill"></div>
                     </div>
+                    <p class="score-percentage">정답률: <span id="scorePercentage">0%</span></p>
                 </div>
                 
                 <div class="result-info">
-                    <p>학번: <span id="studentId"></span></p>
-                    <p>완료 시간: <span id="completionTime"></span></p>
-                    <p>정답 수: <span id="correctAnswers"></span>/<span id="totalQuestions"></span></p>
+                    <p><strong>학생:</strong> <span id="studentName"></span></p>
+                    <div id="examStats"></div>
                 </div>
             </div>
             
+            <div class="category-results">
+                <h3>영역별 점수</h3>
+                <div id="categoryScores"></div>
+            </div>
+            
             <div class="detailed-results">
-                <h3>문제별 결과</h3>
-                <div id="questionResults"></div>
+                <h3>문제별 상세 결과</h3>
+                <div id="detailResults"></div>
             </div>
             
             <div class="result-actions">
-                <button onclick="window.print()" class="print-btn">결과 인쇄</button>
-                <button onclick="location.href='index.html'" class="home-btn">홈으로</button>
+                <button onclick="printResults()" class="print-btn">결과 인쇄</button>
+                <button onclick="retakeExam()" class="retry-btn">재응시</button>
+                <button onclick="goHome()" class="home-btn">홈으로</button>
             </div>
         </div>
     </div>

@@ -18,21 +18,18 @@
         
         <div class="exam-container">
             <div class="question-navigation">
-                <div id="questionNumbers"></div>
+                <h4>문제 번호</h4>
+                <div class="question-nav"></div>
             </div>
             
             <div class="question-content">
-                <div id="currentQuestion">
-                    <h3 id="questionTitle">문제 1</h3>
-                    <div id="questionText"></div>
-                    <div id="answerOptions"></div>
-                </div>
-                
-                <div class="question-controls">
-                    <button id="prevBtn" class="nav-btn">이전</button>
-                    <button id="nextBtn" class="nav-btn">다음</button>
-                    <button id="submitBtn" class="submit-btn">시험 제출</button>
-                </div>
+                <!-- 문제 내용이 JavaScript로 동적 생성됩니다 -->
+            </div>
+            
+            <div class="question-controls">
+                <button onclick="prevQuestion()" class="nav-btn">◀ 이전</button>
+                <button onclick="nextQuestion()" class="nav-btn">다음 ▶</button>
+                <button onclick="submitExam()" class="submit-btn">시험 제출</button>
             </div>
         </div>
     </div>
