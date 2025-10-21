@@ -65,12 +65,28 @@ document.addEventListener('DOMContentLoaded', function() {
     refreshExamResults.addEventListener('click', loadExamResults);
     
     // 모든 시도 횟수 초기화
-    resetAllAttempts.addEventListener('click', function() {
+    resetAllAttempts.addEventListener('click', async function() {
         if (confirm('모든 학생의 시도 횟수를 초기화하시겠습니까? 이 작업은 되돌릴 수 없습니다.')) {
-            localStorage.removeItem('examAttempts');
-            localStorage.removeItem('allExamResults');
-            alert('모든 시도 횟수와 시험 결과가 초기화되었습니다.');
-            loadExamResults();
+            try {
+                const response = await fetch('/api/reset-attempts', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    }
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    alert('모든 시도 횟수와 시험 결과가 초기화되었습니다.');
+                    loadExamResults();
+                } else {
+                    alert('초기화 중 오류가 발생했습니다: ' + data.message);
+                }
+            } catch (error) {
+                console.error('초기화 오류:', error);
+                alert('초기화 중 오류가 발생했습니다.');
+            }
         }
     });
 
@@ -180,10 +196,24 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     // 시험 결과 로드
-    function loadExamResults() {
-        const allResults = JSON.parse(localStorage.getItem('allExamResults') || '[]');
-        displayExamResults(allResults);
-        updateExamTotalCount(allResults.length);
+    async function loadExamResults() {
+        try {
+            const response = await fetch('/api/exam-results');
+            const data = await response.json();
+            
+            if (data.success) {
+                displayExamResults(data.results);
+                updateExamTotalCount(data.results.length);
+            } else {
+                console.error('시험 결과 로드 실패:', data.message);
+                displayExamResults([]);
+                updateExamTotalCount(0);
+            }
+        } catch (error) {
+            console.error('시험 결과 로드 오류:', error);
+            displayExamResults([]);
+            updateExamTotalCount(0);
+        }
     }
 
     // 시험 결과 표시
@@ -203,19 +233,19 @@ document.addEventListener('DOMContentLoaded', function() {
             const studentResults = groupedResults[studentName];
             studentResults.forEach((result, index) => {
                 const row = document.createElement('tr');
-                const timeSpent = formatTimeSpent(result.timeSpent);
+                const timeSpent = formatTimeSpent(result.time_spent);
                 
                 row.innerHTML = `
                     <td>${index === 0 ? `<strong>${studentName}</strong>` : ''}</td>
-                    <td>${result.attempt}차</td>
-                    <td><strong>${result.score}점</strong></td>
+                    <td>${result.attempt_number}차</td>
+                    <td><strong>${result.total_score}점</strong></td>
                     <td>${result.percentage}%</td>
-                    <td>${result.categoryScores['A형'].score}/${result.categoryScores['A형'].total}</td>
-                    <td>${result.categoryScores['B형'].score}/${result.categoryScores['B형'].total}</td>
-                    <td>${result.categoryScores['C형'].score}/${result.categoryScores['C형'].total}</td>
+                    <td>${result.a_type_score}/${result.a_type_total}</td>
+                    <td>${result.b_type_score}/${result.b_type_total}</td>
+                    <td>${result.c_type_score}/${result.c_type_total}</td>
                     <td>${timeSpent}</td>
-                    <td>${formatDateTime(result.timestamp)}</td>
-                    <td><button onclick="showExamDetails('${studentName}', ${result.attempt})" class="detail-btn">상세보기</button></td>
+                    <td>${formatDateTime(result.submitted_at)}</td>
+                    <td><button onclick="showExamDetails('${studentName}', ${result.attempt_number})" class="detail-btn">상세보기</button></td>
                 `;
                 
                 // 점수에 따른 색상 적용
@@ -236,15 +266,15 @@ document.addEventListener('DOMContentLoaded', function() {
     function groupResultsByStudent(results) {
         const grouped = {};
         results.forEach(result => {
-            if (!grouped[result.student]) {
-                grouped[result.student] = [];
+            if (!grouped[result.student_name]) {
+                grouped[result.student_name] = [];
             }
-            grouped[result.student].push(result);
+            grouped[result.student_name].push(result);
         });
         
         // 각 학생의 결과를 시도 순서대로 정렬
         Object.keys(grouped).forEach(student => {
-            grouped[student].sort((a, b) => a.attempt - b.attempt);
+            grouped[student].sort((a, b) => a.attempt_number - b.attempt_number);
         });
         
         return grouped;
@@ -286,64 +316,77 @@ document.addEventListener('DOMContentLoaded', function() {
 });
 
 // 시험 상세보기 (전역 함수)
-function showExamDetails(studentName, attempt) {
-    const allResults = JSON.parse(localStorage.getItem('allExamResults') || '[]');
-    const result = allResults.find(r => r.student === studentName && r.attempt === attempt);
-    
-    if (!result) {
-        alert('해당 시험 결과를 찾을 수 없습니다.');
-        return;
+async function showExamDetails(studentName, attempt) {
+    try {
+        const response = await fetch('/api/exam-results');
+        const data = await response.json();
+        
+        if (!data.success) {
+            alert('시험 결과를 불러오는 중 오류가 발생했습니다.');
+            return;
+        }
+        
+        const result = data.results.find(r => r.student_name === studentName && r.attempt_number === attempt);
+        
+        if (!result) {
+            alert('해당 시험 결과를 찾을 수 없습니다.');
+            return;
+        }
+        
+        let detailHtml = `
+            <div style="padding: 20px;">
+                <h3>${studentName}님의 ${attempt}차 시험 상세 결과</h3>
+                <div style="margin: 20px 0;">
+                    <strong>총점:</strong> ${result.total_score}점 (${result.percentage}%)<br>
+                    <strong>A형 점수:</strong> ${result.a_type_score}/${result.a_type_total}점<br>
+                    <strong>B형 점수:</strong> ${result.b_type_score}/${result.b_type_total}점<br>
+                    <strong>C형 점수:</strong> ${result.c_type_score}/${result.c_type_total}점<br>
+                    <strong>소요 시간:</strong> ${Math.floor(result.time_spent / 60)}분 ${result.time_spent % 60}초<br>
+                    <strong>제출 시간:</strong> ${new Date(result.submitted_at).toLocaleString('ko-KR')}
+                </div>
+                
+                <h4>답안 내역:</h4>
+                <div style="max-height: 400px; overflow-y: auto; border: 1px solid #ddd; padding: 10px;">
+        `;
+        
+        // 답안 상세 표시
+        const answers = result.answers;
+        Object.keys(answers).forEach(questionIndex => {
+            const qIndex = parseInt(questionIndex);
+            const answer = answers[questionIndex];
+            detailHtml += `<p><strong>문제 ${qIndex + 1}:</strong> ${answer || '답안 없음'}</p>`;
+        });
+        
+        detailHtml += `
+                </div>
+            </div>
+        `;
+        
+        // 새 창으로 열기
+        const newWindow = window.open('', '_blank', 'width=600,height=700,scrollbars=yes');
+        newWindow.document.write(`
+            <!DOCTYPE html>
+            <html>
+            <head>
+                <title>시험 결과 상세보기</title>
+                <style>
+                    body { font-family: Arial, sans-serif; margin: 0; }
+                    h3 { color: #333; }
+                    h4 { color: #666; margin-top: 20px; }
+                    p { margin: 5px 0; }
+                </style>
+            </head>
+            <body>
+                ${detailHtml}
+                <div style="text-align: center; margin: 20px;">
+                    <button onclick="window.close()" style="padding: 10px 20px; background: #007bff; color: white; border: none; border-radius: 5px; cursor: pointer;">창 닫기</button>
+                </div>
+            </body>
+            </html>
+        `);
+        newWindow.document.close();
+    } catch (error) {
+        console.error('상세보기 오류:', error);
+        alert('상세보기를 불러오는 중 오류가 발생했습니다.');
     }
-    
-    let detailHtml = `
-        <div style="padding: 20px;">
-            <h3>${studentName}님의 ${attempt}차 시험 상세 결과</h3>
-            <div style="margin: 20px 0;">
-                <strong>총점:</strong> ${result.score}점 (${result.percentage}%)<br>
-                <strong>A형 점수:</strong> ${result.categoryScores['A형'].score}/${result.categoryScores['A형'].total}점<br>
-                <strong>B형 점수:</strong> ${result.categoryScores['B형'].score}/${result.categoryScores['B형'].total}점<br>
-                <strong>C형 점수:</strong> ${result.categoryScores['C형'].score}/${result.categoryScores['C형'].total}점<br>
-                <strong>소요 시간:</strong> ${Math.floor(result.timeSpent / 60)}분 ${result.timeSpent % 60}초<br>
-                <strong>제출 시간:</strong> ${new Date(result.timestamp).toLocaleString('ko-KR')}
-            </div>
-            
-            <h4>답안 내역:</h4>
-            <div style="max-height: 400px; overflow-y: auto; border: 1px solid #ddd; padding: 10px;">
-    `;
-    
-    // 답안 상세 표시
-    Object.keys(result.answers).forEach(questionIndex => {
-        const qIndex = parseInt(questionIndex);
-        const answer = result.answers[questionIndex];
-        detailHtml += `<p><strong>문제 ${qIndex + 1}:</strong> ${answer || '답안 없음'}</p>`;
-    });
-    
-    detailHtml += `
-            </div>
-        </div>
-    `;
-    
-    // 새 창으로 열기
-    const newWindow = window.open('', '_blank', 'width=600,height=700,scrollbars=yes');
-    newWindow.document.write(`
-        <!DOCTYPE html>
-        <html>
-        <head>
-            <title>시험 결과 상세보기</title>
-            <style>
-                body { font-family: Arial, sans-serif; margin: 0; }
-                h3 { color: #333; }
-                h4 { color: #666; margin-top: 20px; }
-                p { margin: 5px 0; }
-            </style>
-        </head>
-        <body>
-            ${detailHtml}
-            <div style="text-align: center; margin: 20px;">
-                <button onclick="window.close()" style="padding: 10px 20px; background: #007bff; color: white; border: none; border-radius: 5px; cursor: pointer;">창 닫기</button>
-            </div>
-        </body>
-        </html>
-    `);
-    newWindow.document.close();
 }
