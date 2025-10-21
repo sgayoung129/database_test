@@ -1038,12 +1038,13 @@ tr:hover {
     line-height: 1.4;
 }
 
-/* 문제 컨트롤 - 더 넓은 버튼 영역 */
+/* 문제 컨트롤 - 정렬된 버튼 영역 */
 .question-controls {
     position: fixed;
     bottom: 20px;
     right: 20px;
     display: flex;
+    align-items: center;
     gap: 12px;
     background: white;
     padding: 18px 25px;
@@ -1054,19 +1055,23 @@ tr:hover {
 
 .question-controls .nav-btn {
     width: auto;
-    height: auto;
+    height: 45px;
     padding: 12px 25px;
     font-size: 14px;
     font-weight: 600;
     min-width: 80px;
     border-radius: 8px;
     white-space: nowrap;
+    display: flex;
+    align-items: center;
+    justify-content: center;
 }
 
 .submit-btn {
     background: #e74c3c;
     color: white;
     border: none;
+    height: 45px;
     padding: 12px 30px;
     border-radius: 8px;
     font-weight: 600;
@@ -1075,6 +1080,9 @@ tr:hover {
     min-width: 100px;
     font-size: 14px;
     white-space: nowrap;
+    display: flex;
+    align-items: center;
+    justify-content: center;
 }
 
 .submit-btn:hover {
