@@ -376,17 +376,47 @@ function updateQuestionNavigation() {
     const navContainer = document.querySelector('.question-nav');
     let html = '';
     
-    examData.questions.forEach((question, index) => {
-        const isAnswered = answers[index] !== undefined;
-        const isCurrent = index === currentQuestion;
-        
+    // A형 문제 (1-10)
+    html += '<div class="question-section"><h5>A형 (객관·단답)</h5><div class="section-nav">';
+    for (let i = 0; i < 10; i++) {
+        const isAnswered = answers[i] !== undefined;
+        const isCurrent = i === currentQuestion;
         html += `
             <button class="nav-btn ${isCurrent ? 'current' : ''} ${isAnswered ? 'answered' : ''}" 
-                    onclick="goToQuestion(${index})">
-                ${index + 1}
+                    onclick="goToQuestion(${i})">
+                ${i + 1}
             </button>
         `;
-    });
+    }
+    html += '</div></div>';
+    
+    // B형 문제 (11-18)
+    html += '<div class="question-section"><h5>B형 (서술·개념)</h5><div class="section-nav">';
+    for (let i = 10; i < 18; i++) {
+        const isAnswered = answers[i] !== undefined;
+        const isCurrent = i === currentQuestion;
+        html += `
+            <button class="nav-btn ${isCurrent ? 'current' : ''} ${isAnswered ? 'answered' : ''}" 
+                    onclick="goToQuestion(${i})">
+                ${i + 1}
+            </button>
+        `;
+    }
+    html += '</div></div>';
+    
+    // C형 문제 (19-26)
+    html += '<div class="question-section"><h5>C형 (실기 SQL)</h5><div class="section-nav">';
+    for (let i = 18; i < 26; i++) {
+        const isAnswered = answers[i] !== undefined;
+        const isCurrent = i === currentQuestion;
+        html += `
+            <button class="nav-btn ${isCurrent ? 'current' : ''} ${isAnswered ? 'answered' : ''}" 
+                    onclick="goToQuestion(${i})">
+                ${i + 1}
+            </button>
+        `;
+    }
+    html += '</div></div>';
     
     navContainer.innerHTML = html;
 }
