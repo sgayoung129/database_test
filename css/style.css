@@ -1365,80 +1365,21 @@ tr:hover {
     background: #5a67d8;
 }
 
-/* 반응형 디자인 - 400px 기준 조정 */
-@media (max-width: 1500px) {
+/* 노트북 최적화 - 1280px+ 기준 */
+@media (max-width: 1280px) {
     .exam-container {
         grid-template-columns: 380px 1fr;
         gap: 20px;
     }
     
     .question-content {
-        padding: 30px 40px;
+        padding: 30px 35px;
     }
     
     .nav-btn {
         max-width: 60px;
         max-height: 60px;
         font-size: 13px;
-    }
-}
-
-@media (max-width: 1300px) {
-    .exam-container {
-        grid-template-columns: 360px 1fr;
-        gap: 20px;
-    }
-    
-    .question-content {
-        padding: 25px 35px;
-    }
-    
-    .nav-btn {
-        max-width: 55px;
-        max-height: 55px;
-        font-size: 13px;
-    }
-}
-
-@media (max-width: 1200px) {
-    .exam-container {
-        grid-template-columns: 340px 1fr;
-        gap: 15px;
-    }
-    
-    .section-nav {
-        gap: 5px;
-    }
-    
-    .section-nav-4 {
-        grid-template-columns: repeat(4, 1fr);
-    }
-    
-    .nav-btn {
-        max-width: 50px;
-        max-height: 50px;
-        font-size: 12px;
-    }
-}
-
-@media (max-width: 1000px) {
-    .exam-container {
-        grid-template-columns: 320px 1fr;
-        gap: 15px;
-    }
-    
-    .section-nav {
-        gap: 4px;
-    }
-    
-    .section-nav-4 {
-        grid-template-columns: repeat(4, 1fr);
-    }
-    
-    .nav-btn {
-        max-width: 55px;
-        max-height: 55px;
-        font-size: 11px;
     }
 }
 
