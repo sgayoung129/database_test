@@ -29,6 +29,7 @@ body.exam-page .container {
     width: 100%;
     margin: 0;
     padding: 10px;
+    background: transparent;
 }
 
 .container {
@@ -1045,21 +1046,21 @@ tr:hover {
     right: 20px;
     display: flex;
     align-items: center;
+    justify-content: space-between;
     gap: 12px;
     background: white;
     padding: 18px 25px;
     border-radius: 10px;
     box-shadow: 0 4px 20px rgba(0,0,0,0.15);
-    min-width: 280px;
+    min-width: 320px;
 }
 
 .question-controls .nav-btn {
-    width: auto;
+    flex: 1;
     height: 45px;
-    padding: 12px 25px;
+    padding: 12px 20px;
     font-size: 14px;
     font-weight: 600;
-    min-width: 80px;
     border-radius: 8px;
     white-space: nowrap;
     display: flex;
@@ -1072,12 +1073,11 @@ tr:hover {
     color: white;
     border: none;
     height: 45px;
-    padding: 12px 30px;
+    padding: 12px 20px;
     border-radius: 8px;
     font-weight: 600;
     cursor: pointer;
     transition: background 0.2s;
-    min-width: 100px;
     font-size: 14px;
     white-space: nowrap;
     display: flex;
@@ -1087,6 +1087,10 @@ tr:hover {
 
 .submit-btn:hover {
     background: #c0392b;
+}
+
+.question-controls .submit-btn {
+    flex: 1;
 }
 
 /* 결과 페이지 스타일 */
