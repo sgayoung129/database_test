@@ -376,9 +376,9 @@ function updateQuestionNavigation() {
     const navContainer = document.querySelector('.question-nav');
     let html = '';
     
-    // A형 문제 (1-10)
+    // A형 문제 (1-8)
     html += '<div class="question-section"><h5>A형 (객관·단답)</h5><div class="section-nav">';
-    for (let i = 0; i < 10; i++) {
+    for (let i = 0; i < 8; i++) {
         const isAnswered = answers[i] !== undefined;
         const isCurrent = i === currentQuestion;
         html += `
@@ -390,9 +390,9 @@ function updateQuestionNavigation() {
     }
     html += '</div></div>';
     
-    // B형 문제 (11-18)
+    // B형 문제 (9-18)
     html += '<div class="question-section"><h5>B형 (서술·개념)</h5><div class="section-nav">';
-    for (let i = 10; i < 18; i++) {
+    for (let i = 8; i < 18; i++) {
         const isAnswered = answers[i] !== undefined;
         const isCurrent = i === currentQuestion;
         html += `
