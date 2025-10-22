@@ -8,9 +8,9 @@ require('dotenv').config();
 const app = express();
 const PORT = process.env.PORT || 10000;
 
-// PostgreSQL 연결 설정
+// PostgreSQL 연결 설정 - 직접 설정
 const connectionString = process.env.DATABASE_URL || 
-    `postgresql://${process.env.DB_USER || 'db_test_qhtm_user'}:${process.env.DB_PASSWORD || 'R1JXxi6kzYRfvY59DFnFi4ih0OGfisUd'}@${process.env.DB_HOST || 'dpg-d3rstnggjchc73e5tbeg-a.oregon-postgres.render.com'}:${process.env.DB_PORT || 5432}/${process.env.DB_NAME || 'db_test_qhtm'}`;
+    'postgresql://db_test_qhtm_user:R1JXxi6kzYRfvY59DFnFi4ih0OGfisUd@dpg-d3rstnggjchc73e5tbeg-a.oregon-postgres.render.com/db_test_qhtm';
 
 console.log('📊 데이터베이스 연결 정보:');
 console.log('- 호스트:', process.env.DB_HOST || 'dpg-d3rstnggjchc73e5tbeg-a.oregon-postgres.render.com');
