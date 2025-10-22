@@ -10,12 +10,12 @@ const PORT = process.env.PORT || 10000;
 
 // PostgreSQL 연결 설정
 const connectionString = process.env.DATABASE_URL || 
-    `postgresql://${process.env.DB_USER || 'database_test_user'}:${process.env.DB_PASSWORD}@${process.env.DB_HOST || 'dpg-d3rstnggjchc73e5tbeg-a.singapore-postgres.render.com'}:${process.env.DB_PORT || 5432}/${process.env.DB_NAME || 'database_test_db'}`;
+    `postgresql://${process.env.DB_USER || 'db_test_qhtm_user'}:${process.env.DB_PASSWORD || 'R1JXxi6kzYRfvY59DFnFi4ih0OGfisUd'}@${process.env.DB_HOST || 'dpg-d3rstnggjchc73e5tbeg-a.oregon-postgres.render.com'}:${process.env.DB_PORT || 5432}/${process.env.DB_NAME || 'db_test_qhtm'}`;
 
 console.log('📊 데이터베이스 연결 정보:');
-console.log('- 호스트:', process.env.DB_HOST || 'dpg-d3rstnggjchc73e5tbeg-a.singapore-postgres.render.com');
-console.log('- 데이터베이스:', process.env.DB_NAME || 'database_test_db');
-console.log('- 사용자:', process.env.DB_USER || 'database_test_user');
+console.log('- 호스트:', process.env.DB_HOST || 'dpg-d3rstnggjchc73e5tbeg-a.oregon-postgres.render.com');
+console.log('- 데이터베이스:', process.env.DB_NAME || 'db_test_qhtm');
+console.log('- 사용자:', process.env.DB_USER || 'db_test_qhtm_user');
 console.log('- DATABASE_URL 설정됨:', !!process.env.DATABASE_URL);
 
 const pool = new Pool({
