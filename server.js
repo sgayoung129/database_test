@@ -9,9 +9,17 @@ const app = express();
 const PORT = process.env.PORT || 10000;
 
 // PostgreSQL 연결 설정
+const connectionString = process.env.DATABASE_URL || 
+    `postgresql://${process.env.DB_USER || 'database_test_user'}:${process.env.DB_PASSWORD}@${process.env.DB_HOST || 'dpg-d3rstnggjchc73e5tbeg-a.singapore-postgres.render.com'}:${process.env.DB_PORT || 5432}/${process.env.DB_NAME || 'database_test_db'}`;
+
+console.log('📊 데이터베이스 연결 정보:');
+console.log('- 호스트:', process.env.DB_HOST || 'dpg-d3rstnggjchc73e5tbeg-a.singapore-postgres.render.com');
+console.log('- 데이터베이스:', process.env.DB_NAME || 'database_test_db');
+console.log('- 사용자:', process.env.DB_USER || 'database_test_user');
+console.log('- DATABASE_URL 설정됨:', !!process.env.DATABASE_URL);
+
 const pool = new Pool({
-    connectionString: process.env.DATABASE_URL || 
-        `postgresql://${process.env.DB_USER || 'database_test_user'}:${process.env.DB_PASSWORD}@${process.env.DB_HOST || 'dpg-d3rstnggjchc73e5tbeg-a.singapore-postgres.render.com'}:${process.env.DB_PORT || 5432}/${process.env.DB_NAME || 'database_test_db'}`,
+    connectionString: connectionString,
     ssl: process.env.NODE_ENV === 'production' ? {
         rejectUnauthorized: false
     } : false
@@ -21,9 +29,9 @@ const pool = new Pool({
 app.use(cors());
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
-app.use(express.static(path.join(__dirname, 'public')));
-app.use('/css', express.static(path.join(__dirname, 'public', 'css')));
-app.use('/js', express.static(path.join(__dirname, 'public', 'js')));
+app.use(express.static(__dirname));
+app.use('/css', express.static(path.join(__dirname, 'css')));
+app.use('/js', express.static(path.join(__dirname, 'js')));
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
 // uploads 디렉토리 생성
@@ -563,15 +571,19 @@ app.use((error, req, res, next) => {
 
 // 404 핸들러
 app.use((req, res) => {
-    res.status(404).sendFile(path.join(__dirname, 'public', 'index.html'));
+    res.status(404).sendFile(path.join(__dirname, 'index.html'));
 });
 
 // 서버 시작
-app.listen(PORT, async () => {
+app.listen(PORT, () => {
     console.log(`🚀 서버가 포트 ${PORT}에서 실행 중입니다.`);
     console.log(`📱 웹사이트: ${process.env.NODE_ENV === 'production' ? 'https://database-test-h7d0.onrender.com' : `http://localhost:${PORT}`}`);
     console.log(`👨‍💼 관리자 페이지: ${process.env.NODE_ENV === 'production' ? 'https://database-test-h7d0.onrender.com/admin.html' : `http://localhost:${PORT}/admin.html`}`);
-    await initDatabase();
+    
+    // 데이터베이스 초기화를 비동기로 실행 (서버 시작을 블로킹하지 않음)
+    initDatabase().catch(err => {
+        console.error('데이터베이스 초기화 실패, 하지만 서버는 계속 실행됩니다:', err.message);
+    });
 });
 
 module.exports = app;
