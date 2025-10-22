@@ -40,6 +40,40 @@ if (!fs.existsSync('uploads')) {
     fs.mkdirSync('uploads');
 }
 
+// 서버 상태 확인 엔드포인트
+app.get('/api/health', async (req, res) => {
+    const health = {
+        server: 'OK',
+        timestamp: new Date().toISOString(),
+        database: 'UNKNOWN'
+    };
+    
+    try {
+        await pool.query('SELECT 1');
+        health.database = 'CONNECTED';
+        
+        // 시험 결과 테이블 존재 여부 확인
+        const tableCheck = await pool.query(`
+            SELECT COUNT(*) as count 
+            FROM information_schema.tables 
+            WHERE table_name = 'exam_results'
+        `);
+        
+        if (tableCheck.rows[0].count > 0) {
+            const recordCount = await pool.query('SELECT COUNT(*) as count FROM exam_results');
+            health.exam_records = parseInt(recordCount.rows[0].count);
+        } else {
+            health.exam_records = 'TABLE_NOT_FOUND';
+        }
+        
+        res.json({ success: true, health });
+    } catch (error) {
+        health.database = 'DISCONNECTED';
+        health.error = error.message;
+        res.status(503).json({ success: false, health });
+    }
+});
+
 // 파일 업로드 설정
 const storage = multer.diskStorage({
     destination: function (req, file, cb) {
@@ -353,6 +387,9 @@ app.post('/api/save-exam-result', async (req, res) => {
 // 시험 결과 조회 (관리자용 - 전체)
 app.get('/api/exam-results', async (req, res) => {
     try {
+        // 데이터베이스 연결 상태 확인
+        await pool.query('SELECT 1');
+        
         const result = await pool.query(`
             SELECT 
                 student_name,
@@ -393,10 +430,21 @@ app.get('/api/exam-results', async (req, res) => {
         });
     } catch (error) {
         console.error('시험 결과 조회 오류:', error);
-        res.status(500).json({
-            success: false,
-            message: '시험 결과 조회 중 오류가 발생했습니다.'
-        });
+        
+        // 데이터베이스 연결 오류인지 확인
+        if (error.code === '28P01' || error.message.includes('password authentication failed')) {
+            res.status(503).json({
+                success: false,
+                message: '데이터베이스 연결 오류입니다. 관리자에게 문의하세요.',
+                error: 'DB_CONNECTION_FAILED'
+            });
+        } else {
+            res.status(500).json({
+                success: false,
+                message: '시험 결과 조회 중 오류가 발생했습니다.',
+                error: error.message
+            });
+        }
     }
 });
 
