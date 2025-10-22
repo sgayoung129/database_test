@@ -67,8 +67,7 @@ document.addEventListener('DOMContentLoaded', function() {
     // 모든 시도 횟수 초기화
     resetAllAttempts.addEventListener('click', function() {
         if (confirm('모든 학생의 시도 횟수를 초기화하시겠습니까? 이 작업은 되돌릴 수 없습니다.')) {
-            localStorage.removeItem('examAttempts');
-            localStorage.removeItem('allExamResults');
+            resetAllExamData();
             alert('모든 시도 횟수와 시험 결과가 초기화되었습니다.');
             loadExamResults();
         }
@@ -180,10 +179,24 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     // 시험 결과 로드
-    function loadExamResults() {
-        const allResults = JSON.parse(localStorage.getItem('allExamResults') || '[]');
-        displayExamResults(allResults);
-        updateExamTotalCount(allResults.length);
+    async function loadExamResults() {
+        try {
+            const response = await fetch('/api/exam-results');
+            const data = await response.json();
+            
+            if (data.success) {
+                displayExamResults(data.results);
+                updateExamTotalCount(data.results.length);
+            } else {
+                console.error('시험 결과 로드 실패:', data.message);
+                document.getElementById('examResultsTableBody').innerHTML = 
+                    '<tr><td colspan="10" style="text-align: center; color: #999;">시험 결과를 불러올 수 없습니다.</td></tr>';
+            }
+        } catch (error) {
+            console.error('네트워크 오류:', error);
+            document.getElementById('examResultsTableBody').innerHTML = 
+                '<tr><td colspan="10" style="text-align: center; color: #999;">서버 연결 오류가 발생했습니다.</td></tr>';
+        }
     }
 
     // 시험 결과 표시
@@ -286,16 +299,26 @@ document.addEventListener('DOMContentLoaded', function() {
 });
 
 // 시험 상세보기 (전역 함수)
-function showExamDetails(studentName, attempt) {
-    const allResults = JSON.parse(localStorage.getItem('allExamResults') || '[]');
-    const result = allResults.find(r => r.student === studentName && r.attempt === attempt);
+async function showExamDetails(studentName, attempt) {
+    try {
+        const response = await fetch('/api/exam-detail', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ student: studentName, attempt: attempt })
+        });
+        
+        const data = await response.json();
+        
+        if (!data.success) {
+            alert('시험 결과를 불러올 수 없습니다.');
+            return;
+        }
+        
+        const result = data.result;
     
-    if (!result) {
-        alert('해당 시험 결과를 찾을 수 없습니다.');
-        return;
-    }
-    
-    let detailHtml = `
+        let detailHtml = `
         <div style="padding: 20px;">
             <h3>${studentName}님의 ${attempt}차 시험 상세 결과</h3>
             <div style="margin: 20px 0;">
@@ -307,43 +330,99 @@ function showExamDetails(studentName, attempt) {
                 <strong>제출 시간:</strong> ${new Date(result.timestamp).toLocaleString('ko-KR')}
             </div>
             
-            <h4>답안 내역:</h4>
+            <h4>채점 상세 내역:</h4>
             <div style="max-height: 400px; overflow-y: auto; border: 1px solid #ddd; padding: 10px;">
     `;
     
-    // 답안 상세 표시
-    Object.keys(result.answers).forEach(questionIndex => {
-        const qIndex = parseInt(questionIndex);
-        const answer = result.answers[questionIndex];
-        detailHtml += `<p><strong>문제 ${qIndex + 1}:</strong> ${answer || '답안 없음'}</p>`;
-    });
+    // 채점 상세 정보 표시
+    if (result.gradingDetails && result.gradingDetails.length > 0) {
+        result.gradingDetails.forEach((detail, index) => {
+            const scorePercentage = detail.maxPoints > 0 ? Math.round((detail.score / detail.maxPoints) * 100) : 0;
+            const scoreClass = scorePercentage >= 80 ? 'good' : scorePercentage >= 60 ? 'average' : 'poor';
+            
+            detailHtml += `
+                <div style="border: 1px solid #eee; margin: 10px 0; padding: 10px; border-radius: 5px;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+                        <strong>문제 ${index + 1} (${detail.type})</strong>
+                        <span class="${scoreClass}" style="padding: 2px 8px; border-radius: 3px; font-weight: bold; 
+                              color: ${scoreClass === 'good' ? '#28a745' : scoreClass === 'average' ? '#ffc107' : '#dc3545'};">
+                            ${detail.score}/${detail.maxPoints}점 (${scorePercentage}%)
+                        </span>
+                    </div>
+                    <div style="margin: 5px 0;">
+                        <strong>답안:</strong> 
+                        <span style="background: #f8f9fa; padding: 5px; border-radius: 3px; display: inline-block; margin-left: 10px;">
+                            ${detail.userAnswer || '답안 없음'}
+                        </span>
+                    </div>
+                    <div style="margin: 5px 0;">
+                        <strong>채점 결과:</strong> 
+                        <span style="color: #666;">${detail.feedback}</span>
+                        ${detail.needsReview ? '<span style="color: #dc3545; font-weight: bold; margin-left: 10px;">[수동 검토 필요]</span>' : ''}
+                    </div>
+                </div>
+            `;
+        });
+    } else {
+        // 기존 방식 (채점 상세 정보가 없는 경우)
+        Object.keys(result.answers).forEach(questionIndex => {
+            const qIndex = parseInt(questionIndex);
+            const answer = result.answers[questionIndex];
+            detailHtml += `<p><strong>문제 ${qIndex + 1}:</strong> ${answer || '답안 없음'}</p>`;
+        });
+    }
     
     detailHtml += `
             </div>
         </div>
     `;
     
-    // 새 창으로 열기
-    const newWindow = window.open('', '_blank', 'width=600,height=700,scrollbars=yes');
-    newWindow.document.write(`
-        <!DOCTYPE html>
-        <html>
-        <head>
-            <title>시험 결과 상세보기</title>
-            <style>
-                body { font-family: Arial, sans-serif; margin: 0; }
-                h3 { color: #333; }
-                h4 { color: #666; margin-top: 20px; }
-                p { margin: 5px 0; }
-            </style>
-        </head>
-        <body>
-            ${detailHtml}
-            <div style="text-align: center; margin: 20px;">
-                <button onclick="window.close()" style="padding: 10px 20px; background: #007bff; color: white; border: none; border-radius: 5px; cursor: pointer;">창 닫기</button>
-            </div>
-        </body>
-        </html>
-    `);
-    newWindow.document.close();
+        // 새 창으로 열기
+        const newWindow = window.open('', '_blank', 'width=600,height=700,scrollbars=yes');
+        newWindow.document.write(`
+            <!DOCTYPE html>
+            <html>
+            <head>
+                <title>시험 결과 상세보기</title>
+                <style>
+                    body { font-family: Arial, sans-serif; margin: 0; }
+                    h3 { color: #333; }
+                    h4 { color: #666; margin-top: 20px; }
+                    p { margin: 5px 0; }
+                </style>
+            </head>
+            <body>
+                ${detailHtml}
+                <div style="text-align: center; margin: 20px;">
+                    <button onclick="window.close()" style="padding: 10px 20px; background: #007bff; color: white; border: none; border-radius: 5px; cursor: pointer;">창 닫기</button>
+                </div>
+            </body>
+            </html>
+        `);
+        newWindow.document.close();
+        
+    } catch (error) {
+        console.error('상세보기 로드 오류:', error);
+        alert('시험 결과 상세보기를 불러올 수 없습니다.');
+    }
+}
+
+// 모든 시험 데이터 초기화
+async function resetAllExamData() {
+    try {
+        const response = await fetch('/api/reset-exam-data', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            }
+        });
+        
+        const data = await response.json();
+        
+        if (!data.success) {
+            console.error('데이터 초기화 실패:', data.message);
+        }
+    } catch (error) {
+        console.error('데이터 초기화 네트워크 오류:', error);
+    }
 }

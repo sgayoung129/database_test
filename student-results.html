@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>내 시험 결과 조회</title>
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+    <div class="container">
+        <div class="admin-container">
+            <h1>내 시험 결과 조회</h1>
+            
+            <div id="studentLoginSection" class="admin-login">
+                <h2>시험 결과 확인</h2>
+                <p>이름을 입력하여 본인의 시험 결과를 확인하세요.</p>
+                <form id="studentLoginForm">
+                    <div class="form-group">
+                        <label for="studentName">이름:</label>
+                        <input type="text" id="studentName" placeholder="시험에서 입력한 이름을 정확히 입력하세요" required>
+                    </div>
+                    <button type="submit">결과 조회</button>
+                </form>
+                <div class="student-link">
+                    <a href="index.html">메인 페이지로 돌아가기</a> | 
+                    <a href="admin.html">관리자 페이지</a>
+                </div>
+            </div>
+            
+            <div id="studentResultsPanel" class="admin-panel" style="display: none;">
+                <div class="admin-nav">
+                    <h2 id="studentNameDisplay"></h2>
+                    <button id="backBtn" class="logout-btn">다른 학생 조회</button>
+                </div>
+                
+                <div class="tab-content active">
+                    <h3>시험 결과 내역</h3>
+                    <div id="noResultsMessage" style="display: none;">
+                        <p style="text-align: center; color: #999; margin: 40px 0;">
+                            아직 시험을 보지 않았거나 결과가 없습니다.
+                        </p>
+                    </div>
+                    
+                    <div id="resultsContainer" style="display: none;">
+                        <div class="exam-controls">
+                            <button id="refreshStudentResults" class="refresh-btn">결과 새로고침</button>
+                            <span id="studentResultCount" class="total-count">총 0개 결과</span>
+                        </div>
+                        
+                        <div class="exam-results-list">
+                            <table id="studentResultsTable">
+                                <thead>
+                                    <tr>
+                                        <th>시도 차수</th>
+                                        <th>점수</th>
+                                        <th>백분율</th>
+                                        <th>A형 점수</th>
+                                        <th>B형 점수</th>
+                                        <th>C형 점수</th>
+                                        <th>소요 시간</th>
+                                        <th>제출 시간</th>
+                                        <th>상세보기</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="studentResultsTableBody">
+                                </tbody>
+                            </table>
+                        </div>
+                        
+                        <div class="student-summary" style="margin-top: 30px; padding: 20px; background: #f8f9fa; border-radius: 5px;">
+                            <h4>요약</h4>
+                            <div id="summaryContent">
+                                <p><strong>총 시도 횟수:</strong> <span id="totalAttempts">0</span>회</p>
+                                <p><strong>최고 점수:</strong> <span id="bestScore">0</span>점 (<span id="bestPercentage">0</span>%)</p>
+                                <p><strong>평균 점수:</strong> <span id="averageScore">0</span>점</p>
+                                <p><strong>남은 시도 횟수:</strong> <span id="remainingAttempts">3</span>회</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <script src="js/student-results.js"></script>
+</body>
+</html>

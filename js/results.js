@@ -72,26 +72,58 @@ function displayDetailedResults(examData, answers, results) {
     const detailContainer = document.getElementById('detailResults');
     let html = '';
     
-    examData.questions.forEach((question, index) => {
-        const userAnswer = answers[index] || '미답';
-        const isCorrect = checkAnswer(question, userAnswer);
-        
-        html += `
-            <div class="question-result ${isCorrect ? 'correct' : 'incorrect'}">
-                <div class="question-header">
-                    <h4>문제 ${index + 1} (${question.category} - ${question.points}점)</h4>
-                    <span class="result-icon">${isCorrect ? '✓' : '✗'}</span>
+    // 채점 상세 정보가 있는 경우 사용
+    if (results.gradingDetails && results.gradingDetails.length > 0) {
+        results.gradingDetails.forEach((detail, index) => {
+            const question = examData.questions[index];
+            const scorePercentage = detail.maxPoints > 0 ? Math.round((detail.score / detail.maxPoints) * 100) : 0;
+            const scoreClass = scorePercentage >= 80 ? 'correct' : scorePercentage >= 60 ? 'partial' : 'incorrect';
+            
+            html += `
+                <div class="question-result ${scoreClass}">
+                    <div class="question-header">
+                        <h4>문제 ${index + 1} (${detail.type} - ${detail.maxPoints}점)</h4>
+                        <div class="score-display">
+                            <span class="score-points">${detail.score}/${detail.maxPoints}점</span>
+                            <span class="score-percentage">(${scorePercentage}%)</span>
+                        </div>
+                    </div>
+                    <div class="question-content">
+                        <p><strong>문제:</strong> ${question.question}</p>
+                        <p><strong>제출 답안:</strong> ${formatAnswer(detail.userAnswer)}</p>
+                        ${question.correctAnswer ? `<p><strong>정답:</strong> ${formatAnswer(question.correctAnswer)}</p>` : ''}
+                        ${question.type === 'multiple' ? `<p><strong>선택지:</strong> ${question.options.join(', ')}</p>` : ''}
+                        <div class="feedback-section">
+                            <p class="feedback ${scoreClass}"><strong>채점 결과:</strong> ${detail.feedback}</p>
+                            ${detail.needsReview ? '<p class="needs-review"><strong>수동 검토 필요</strong></p>' : ''}
+                        </div>
+                    </div>
                 </div>
-                <div class="question-content">
-                    <p><strong>문제:</strong> ${question.question}</p>
-                    <p><strong>제출 답안:</strong> ${formatAnswer(userAnswer)}</p>
-                    <p><strong>정답:</strong> ${formatAnswer(question.correctAnswer)}</p>
-                    ${question.type === 'multiple' ? `<p><strong>선택지:</strong> ${question.options.join(', ')}</p>` : ''}
-                    ${getAnswerFeedback(question, userAnswer, isCorrect)}
+            `;
+        });
+    } else {
+        // 기존 방식 (채점 상세 정보가 없는 경우)
+        examData.questions.forEach((question, index) => {
+            const userAnswer = answers[index] || '미답';
+            const isCorrect = checkAnswer(question, userAnswer);
+            
+            html += `
+                <div class="question-result ${isCorrect ? 'correct' : 'incorrect'}">
+                    <div class="question-header">
+                        <h4>문제 ${index + 1} (${question.category} - ${question.points}점)</h4>
+                        <span class="result-icon">${isCorrect ? '✓' : '✗'}</span>
+                    </div>
+                    <div class="question-content">
+                        <p><strong>문제:</strong> ${question.question}</p>
+                        <p><strong>제출 답안:</strong> ${formatAnswer(userAnswer)}</p>
+                        <p><strong>정답:</strong> ${formatAnswer(question.correctAnswer)}</p>
+                        ${question.type === 'multiple' ? `<p><strong>선택지:</strong> ${question.options.join(', ')}</p>` : ''}
+                        ${getAnswerFeedback(question, userAnswer, isCorrect)}
+                    </div>
                 </div>
-            </div>
-        `;
-    });
+            `;
+        });
+    }
     
     detailContainer.innerHTML = html;
 }

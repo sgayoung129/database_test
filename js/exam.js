@@ -84,7 +84,13 @@ const examData = {
             category: 'A형',
             points: 2,
             question: '카디널리티(Cardinality)와 디그리(Degree)를 각각 정의하시오. (한 줄씩)',
-            correctAnswer: 'Cardinality: 테이블의 행(튜플)의 수\nDegree: 테이블의 열(속성)의 수'
+            correctAnswer: 'Cardinality: 테이블의 행(튜플)의 수\nDegree: 테이블의 열(속성)의 수',
+            gradingCriteria: {
+                keywords: {
+                    cardinality: ['카디널리티', '행', '튜플', '수', '개수'],
+                    degree: ['디그리', '열', '속성', '수', '개수']
+                }
+            }
         },
         {
             id: 10,
@@ -92,7 +98,10 @@ const examData = {
             category: 'A형',
             points: 2,
             question: '외래키(FK)가 위배되기 쉬운 대표적 무결성 유형 한 가지를 이름으로 쓰시오.',
-            correctAnswer: '참조 무결성'
+            correctAnswer: '참조 무결성',
+            gradingCriteria: {
+                acceptableAnswers: ['참조 무결성', '참조무결성', '참조제약', 'referential integrity']
+            }
         },
         
         // B형: 서술·개념 (각 5점, 총 40점)
@@ -102,7 +111,12 @@ const examData = {
             category: 'B형',
             points: 5,
             question: '외부/개념/내부 스키마의 관점 차이와 예시(사용자·관리자·설계자 관점)를 4~5문장으로 설명하시오.',
-            correctAnswer: '외부 스키마는 사용자 관점에서 필요한 데이터만 보는 뷰 형태입니다. 개념 스키마는 전체 데이터베이스의 논리적 구조를 나타내며 관리자가 설계합니다. 내부 스키마는 물리적 저장 구조를 다루며 설계자가 성능 최적화를 담당합니다.'
+            correctAnswer: '외부 스키마는 사용자 관점에서 필요한 데이터만 보는 뷰 형태입니다. 개념 스키마는 전체 데이터베이스의 논리적 구조를 나타내며 관리자가 설계합니다. 내부 스키마는 물리적 저장 구조를 다루며 설계자가 성능 최적화를 담당합니다.',
+            gradingCriteria: {
+                requiredKeywords: ['외부 스키마', '개념 스키마', '내부 스키마'], // 3점
+                optionalKeywords: ['사용자', '관리자', '설계자', '뷰', '논리적', '물리적'], // 각 0.5점
+                minLength: 50
+            }
         },
         {
             id: 12,
@@ -250,21 +264,13 @@ document.addEventListener('DOMContentLoaded', function() {
     initializeExam();
 });
 
-function initializeExam() {
+async function initializeExam() {
     // URL 매개변수에서 학생 정보 가져오기
     const urlParams = new URLSearchParams(window.location.search);
     currentStudent = urlParams.get('student') || '익명';
     
-    // localStorage에서 시험 시도 횟수 확인
-    const studentAttempts = JSON.parse(localStorage.getItem('examAttempts') || '{}');
-    currentAttempt = (studentAttempts[currentStudent] || 0) + 1;
-    
-    // 최대 시도 횟수 초과 확인
-    if (currentAttempt > MAX_ATTEMPTS) {
-        alert(`${currentStudent}님은 이미 ${MAX_ATTEMPTS}회 시험을 완료하셨습니다. 더 이상 시험을 볼 수 없습니다.`);
-        window.location.href = 'index.html';
-        return;
-    }
+    // 서버에서 시험 시도 횟수 확인
+    await checkExamAttempts();
     
     document.getElementById('currentStudent').textContent = `${currentStudent} (${currentAttempt}/${MAX_ATTEMPTS}회차)`;
     
@@ -272,6 +278,39 @@ function initializeExam() {
     startTimer();
     displayQuestion();
     updateQuestionNavigation();
+}
+
+// 서버에서 시험 시도 횟수 확인
+async function checkExamAttempts() {
+    try {
+        const response = await fetch('/api/check-attempts', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ student: currentStudent })
+        });
+        
+        const data = await response.json();
+        
+        if (data.success) {
+            currentAttempt = data.currentAttempt + 1;
+            
+            if (currentAttempt > MAX_ATTEMPTS) {
+                alert(`${currentStudent}님은 이미 ${MAX_ATTEMPTS}회 시험을 완료하셨습니다. 더 이상 시험을 볼 수 없습니다.`);
+                window.location.href = 'index.html';
+                return;
+            }
+        } else {
+            console.error('시도 횟수 확인 실패:', data.message);
+            // 서버 오류 시 기본값으로 1회차 진행
+            currentAttempt = 1;
+        }
+    } catch (error) {
+        console.error('네트워크 오류:', error);
+        // 네트워크 오류 시 기본값으로 1회차 진행
+        currentAttempt = 1;
+    }
 }
 
 function startTimer() {
@@ -507,7 +546,7 @@ function prevQuestion() {
     }
 }
 
-function submitExam() {
+async function submitExam() {
     saveCurrentAnswer();
     clearInterval(timer);
     
@@ -530,13 +569,8 @@ function submitExam() {
     // 점수 계산
     const results = calculateScore();
     
-    // 시도 횟수 업데이트
-    const studentAttempts = JSON.parse(localStorage.getItem('examAttempts') || '{}');
-    studentAttempts[currentStudent] = currentAttempt;
-    localStorage.setItem('examAttempts', JSON.stringify(studentAttempts));
-    
-    // 시험 결과 저장 (3번의 모든 결과 저장)
-    saveExamResult(results);
+    // 시험 결과 저장
+    await saveExamResult(results);
     
     // 결과 페이지로 이동
     sessionStorage.setItem('examResults', JSON.stringify({
@@ -558,21 +592,53 @@ function calculateScore() {
         'C형': { score: 0, total: 40 }
     };
     
+    const gradingDetails = []; // 채점 상세 정보 저장
+    
     examData.questions.forEach((question, index) => {
         const userAnswer = answers[index];
         let questionScore = 0;
+        let gradingInfo = {
+            questionId: question.id,
+            type: question.type,
+            userAnswer: userAnswer,
+            maxPoints: question.points,
+            score: 0,
+            feedback: ''
+        };
         
         if (userAnswer !== undefined && userAnswer !== '') {
-            // 간단한 채점 로직 (실제로는 더 정교한 채점이 필요)
-            if (question.type === 'multiple') {
-                if (userAnswer === question.correctAnswer) {
-                    questionScore = question.points;
-                }
-            } else {
-                // 주관식/서술형/SQL은 부분 점수 부여 (실제로는 수동 채점 필요)
-                questionScore = Math.floor(question.points * 0.7); // 임시로 70% 점수
+            switch (question.type) {
+                case 'multiple':
+                    questionScore = gradeMultipleChoice(userAnswer, question);
+                    gradingInfo.feedback = questionScore > 0 ? '정답' : '오답';
+                    break;
+                    
+                case 'shortAnswer':
+                    const shortResult = gradeShortAnswer(userAnswer, question);
+                    questionScore = shortResult.score;
+                    gradingInfo.feedback = shortResult.feedback;
+                    break;
+                    
+                case 'essay':
+                    const essayResult = gradeEssay(userAnswer, question);
+                    questionScore = essayResult.score;
+                    gradingInfo.feedback = essayResult.feedback;
+                    gradingInfo.needsReview = essayResult.needsReview;
+                    break;
+                    
+                case 'sql':
+                    // SQL은 기본적으로 70% 점수 (수동 채점 필요)
+                    questionScore = Math.floor(question.points * 0.7);
+                    gradingInfo.feedback = 'SQL 문제는 수동 채점이 필요합니다.';
+                    gradingInfo.needsReview = true;
+                    break;
             }
+        } else {
+            gradingInfo.feedback = '답안 없음';
         }
+        
+        gradingInfo.score = questionScore;
+        gradingDetails.push(gradingInfo);
         
         totalScore += questionScore;
         categoryScores[question.category].score += questionScore;
@@ -581,14 +647,147 @@ function calculateScore() {
     return {
         totalScore: totalScore,
         percentage: Math.round((totalScore / 100) * 100),
-        categoryScores: categoryScores
+        categoryScores: categoryScores,
+        gradingDetails: gradingDetails
     };
 }
 
-function saveExamResult(results) {
-    // 모든 시험 결과를 localStorage에 저장
-    const allResults = JSON.parse(localStorage.getItem('allExamResults') || '[]');
+// 객관식 채점
+function gradeMultipleChoice(userAnswer, question) {
+    return userAnswer === question.correctAnswer ? question.points : 0;
+}
+
+// 단답식 자동 채점
+function gradeShortAnswer(userAnswer, question) {
+    if (!question.gradingCriteria) {
+        // 채점 기준이 없으면 단순 문자열 비교
+        return {
+            score: userAnswer.trim().toLowerCase() === question.correctAnswer.toLowerCase() ? question.points : 0,
+            feedback: '단순 문자열 비교'
+        };
+    }
     
+    const criteria = question.gradingCriteria;
+    let score = 0;
+    let feedback = '';
+    
+    // 정규화 함수
+    function normalize(text) {
+        return text.toString()
+            .toLowerCase()
+            .trim()
+            .replace(/\s+/g, ' ')
+            .replace(/[^\w\s가-힣]/g, '');
+    }
+    
+    const normalizedAnswer = normalize(userAnswer);
+    
+    if (criteria.acceptableAnswers) {
+        // 허용 가능한 답안들과 비교 (9-10번 문제용)
+        const isCorrect = criteria.acceptableAnswers.some(acceptable => 
+            normalize(acceptable) === normalizedAnswer ||
+            normalizedAnswer.includes(normalize(acceptable))
+        );
+        
+        score = isCorrect ? question.points : 0;
+        feedback = isCorrect ? '정답' : '오답';
+        
+    } else if (criteria.keywords) {
+        // 키워드 기반 채점 (카디널리티/디그리 문제용)
+        let cardinalityFound = false;
+        let degreeFound = false;
+        
+        if (criteria.keywords.cardinality) {
+            cardinalityFound = criteria.keywords.cardinality.some(keyword =>
+                normalizedAnswer.includes(normalize(keyword))
+            );
+        }
+        
+        if (criteria.keywords.degree) {
+            degreeFound = criteria.keywords.degree.some(keyword =>
+                normalizedAnswer.includes(normalize(keyword))
+            );
+        }
+        
+        if (cardinalityFound && degreeFound) {
+            score = question.points; // 2점
+            feedback = '카디널리티와 디그리 모두 정답';
+        } else if (cardinalityFound || degreeFound) {
+            score = 1; // 1점
+            feedback = cardinalityFound ? '카디널리티만 정답' : '디그리만 정답';
+        } else {
+            score = 0;
+            feedback = '주요 키워드 누락';
+        }
+    }
+    
+    return { score, feedback };
+}
+
+// 주관식 반자동 채점
+function gradeEssay(userAnswer, question) {
+    if (!question.gradingCriteria) {
+        return {
+            score: Math.floor(question.points * 0.7),
+            feedback: '수동 채점 필요',
+            needsReview: true
+        };
+    }
+    
+    const criteria = question.gradingCriteria;
+    let score = 0;
+    let feedback = '';
+    
+    function normalizeEssay(text) {
+        return text.toString().toLowerCase().trim();
+    }
+    
+    const normalizedAnswer = normalizeEssay(userAnswer);
+    
+    // 최소 길이 체크
+    if (criteria.minLength && userAnswer.length < criteria.minLength) {
+        return {
+            score: 0,
+            feedback: `답안이 너무 짧습니다 (최소 ${criteria.minLength}자 필요)`,
+            needsReview: true
+        };
+    }
+    
+    // 필수 키워드 체크
+    let requiredCount = 0;
+    if (criteria.requiredKeywords) {
+        criteria.requiredKeywords.forEach(keyword => {
+            if (normalizedAnswer.includes(normalizeEssay(keyword))) {
+                requiredCount++;
+            }
+        });
+        score += requiredCount; // 필수 키워드당 1점
+    }
+    
+    // 선택 키워드 체크
+    let optionalCount = 0;
+    if (criteria.optionalKeywords) {
+        criteria.optionalKeywords.forEach(keyword => {
+            if (normalizedAnswer.includes(normalizeEssay(keyword))) {
+                optionalCount++;
+            }
+        });
+        score += optionalCount * 0.5; // 선택 키워드당 0.5점
+    }
+    
+    // 최대 점수 제한
+    score = Math.min(score, question.points);
+    
+    feedback = `필수 키워드: ${requiredCount}/${criteria.requiredKeywords?.length || 0}, 선택 키워드: ${optionalCount}`;
+    
+    return {
+        score: Math.floor(score * 10) / 10, // 소수점 첫째자리까지
+        feedback: feedback,
+        needsReview: score < question.points * 0.8 // 80% 미만이면 재검토 필요
+    };
+}
+
+async function saveExamResult(results) {
     const resultData = {
         student: currentStudent,
         attempt: currentAttempt,
@@ -596,10 +795,28 @@ function saveExamResult(results) {
         percentage: results.percentage,
         categoryScores: results.categoryScores,
         answers: answers,
+        gradingDetails: results.gradingDetails, // 채점 세부사항 추가
         timestamp: new Date().toISOString(),
         timeSpent: (examData.timeLimit * 60) - timeRemaining
     };
     
-    allResults.push(resultData);
-    localStorage.setItem('allExamResults', JSON.stringify(allResults));
+    try {
+        const response = await fetch('/api/save-exam-result', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(resultData)
+        });
+        
+        const data = await response.json();
+        
+        if (!data.success) {
+            console.error('시험 결과 저장 실패:', data.message);
+            // 실패 시에도 클라이언트에서 세션에 저장하여 결과 페이지에서 보여줄 수 있도록
+        }
+    } catch (error) {
+        console.error('시험 결과 저장 네트워크 오류:', error);
+        // 네트워크 오류 시에도 클라이언트에서 세션에 저장하여 결과 페이지에서 보여줄 수 있도록
+    }
 }

@@ -65,16 +65,40 @@ const upload = multer({
 // 데이터베이스 테이블 생성
 async function initDatabase() {
     try {
-        // 기존 submissions 테이블
+        // schema.sql 파일의 내용을 실행
+        const fs = require('fs');
+        const schemaPath = path.join(__dirname, 'database', 'schema.sql');
+        
+        if (fs.existsSync(schemaPath)) {
+            const schemaSql = fs.readFileSync(schemaPath, 'utf8');
+            await pool.query(schemaSql);
+            console.log('데이터베이스 스키마가 성공적으로 적용되었습니다.');
+        } else {
+            // 스키마 파일이 없는 경우 기본 테이블 생성
+            await createBasicTables();
+        }
+    } catch (error) {
+        console.error('데이터베이스 초기화 오류:', error);
+        // 스키마 파일 실행 실패 시 기본 테이블 생성
+        await createBasicTables();
+    }
+}
+
+async function createBasicTables() {
+    try {
+        // 제출 데이터 테이블
         await pool.query(`
             CREATE TABLE IF NOT EXISTS submissions (
                 id SERIAL PRIMARY KEY,
                 name VARCHAR(100) NOT NULL,
                 phone VARCHAR(20) NOT NULL,
-                email VARCHAR(100) NOT NULL,
-                file_path VARCHAR(255),
+                email VARCHAR(255) NOT NULL,
                 original_filename VARCHAR(255),
-                submission_time TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                file_path VARCHAR(500),
+                file_size INTEGER,
+                mime_type VARCHAR(100),
+                submission_time TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+                created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
             )
         `);
         
@@ -83,36 +107,35 @@ async function initDatabase() {
             CREATE TABLE IF NOT EXISTS exam_results (
                 id SERIAL PRIMARY KEY,
                 student_name VARCHAR(100) NOT NULL,
-                attempt_number INTEGER NOT NULL CHECK (attempt_number >= 1 AND attempt_number <= 3),
+                attempt_number INTEGER NOT NULL DEFAULT 1,
                 total_score INTEGER NOT NULL DEFAULT 0,
-                percentage DECIMAL(5,2) NOT NULL DEFAULT 0.00,
-                a_type_score INTEGER NOT NULL DEFAULT 0,
-                a_type_total INTEGER NOT NULL DEFAULT 20,
-                b_type_score INTEGER NOT NULL DEFAULT 0,
-                b_type_total INTEGER NOT NULL DEFAULT 40,
-                c_type_score INTEGER NOT NULL DEFAULT 0,
-                c_type_total INTEGER NOT NULL DEFAULT 40,
-                time_spent INTEGER NOT NULL DEFAULT 0,
+                percentage INTEGER NOT NULL DEFAULT 0,
+                category_scores JSONB NOT NULL DEFAULT '{}',
                 answers JSONB NOT NULL DEFAULT '{}',
-                submitted_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                grading_details JSONB NOT NULL DEFAULT '[]',
+                time_spent INTEGER NOT NULL DEFAULT 0,
+                submitted_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+                created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
                 UNIQUE(student_name, attempt_number)
             )
         `);
         
-        // 학생 시도 횟수 테이블
+        // 시험 시도 횟수 관리 테이블
         await pool.query(`
-            CREATE TABLE IF NOT EXISTS student_attempts (
+            CREATE TABLE IF NOT EXISTS exam_attempts (
                 id SERIAL PRIMARY KEY,
-                student_name VARCHAR(100) UNIQUE NOT NULL,
-                current_attempts INTEGER NOT NULL DEFAULT 0 CHECK (current_attempts >= 0 AND current_attempts <= 3),
-                last_attempt_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                student_name VARCHAR(100) NOT NULL UNIQUE,
+                total_attempts INTEGER NOT NULL DEFAULT 0,
+                max_attempts INTEGER NOT NULL DEFAULT 3,
+                last_attempt_at TIMESTAMP WITH TIME ZONE,
+                created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+                updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
             )
         `);
         
-        console.log('데이터베이스 테이블이 성공적으로 생성되었습니다.');
+        console.log('기본 데이터베이스 테이블이 성공적으로 생성되었습니다.');
     } catch (error) {
-        console.error('데이터베이스 초기화 오류:', error);
+        console.error('기본 테이블 생성 오류:', error);
     }
 }
 
@@ -150,8 +173,8 @@ app.post('/submit', upload.single('file'), async (req, res) => {
 
         // 데이터베이스에 저장
         const query = `
-            INSERT INTO submissions (name, phone, email, file_path, original_filename)
-            VALUES ($1, $2, $3, $4, $5)
+            INSERT INTO submissions (name, phone, email, original_filename, file_path, file_size, mime_type)
+            VALUES ($1, $2, $3, $4, $5, $6, $7)
             RETURNING id
         `;
         
@@ -159,8 +182,10 @@ app.post('/submit', upload.single('file'), async (req, res) => {
             name,
             phone,
             email,
+            file ? file.originalname : null,
             file ? file.filename : null,
-            file ? file.originalname : null
+            file ? file.size : null,
+            file ? file.mimetype : null
         ];
 
         const result = await pool.query(query, values);
@@ -184,7 +209,15 @@ app.post('/submit', upload.single('file'), async (req, res) => {
 app.get('/admin/submissions', async (req, res) => {
     try {
         const result = await pool.query(`
-            SELECT id, name, phone, email, original_filename, submission_time
+            SELECT 
+                id, 
+                name, 
+                phone, 
+                email, 
+                original_filename, 
+                file_size,
+                mime_type,
+                submission_time
             FROM submissions
             ORDER BY submission_time DESC
         `);
@@ -202,22 +235,28 @@ app.get('/admin/submissions', async (req, res) => {
     }
 });
 
-// 학생 시도 횟수 확인
-app.get('/api/student-attempts/:studentName', async (req, res) => {
+// 시험 시도 횟수 확인
+app.post('/api/check-attempts', async (req, res) => {
     try {
-        const { studentName } = req.params;
+        const { student } = req.body;
+        
+        if (!student) {
+            return res.status(400).json({
+                success: false,
+                message: '학생 이름이 필요합니다.'
+            });
+        }
         
         const result = await pool.query(
-            'SELECT current_attempts FROM student_attempts WHERE student_name = $1',
-            [studentName]
+            'SELECT total_attempts FROM exam_attempts WHERE student_name = $1',
+            [student]
         );
         
-        const currentAttempts = result.rows.length > 0 ? result.rows[0].current_attempts : 0;
+        const currentAttempt = result.rows.length > 0 ? result.rows[0].total_attempts : 0;
         
         res.json({
             success: true,
-            currentAttempts: currentAttempts,
-            canTakeExam: currentAttempts < 3
+            currentAttempt: currentAttempt
         });
     } catch (error) {
         console.error('시도 횟수 확인 오류:', error);
@@ -228,87 +267,69 @@ app.get('/api/student-attempts/:studentName', async (req, res) => {
     }
 });
 
-// 시험 결과 제출
-app.post('/api/submit-exam', async (req, res) => {
+// 시험 결과 저장
+app.post('/api/save-exam-result', async (req, res) => {
     try {
         const { 
-            studentName, 
-            answers, 
-            totalScore, 
+            student, 
+            attempt, 
+            score, 
             percentage, 
             categoryScores, 
+            answers,
+            gradingDetails,
             timeSpent 
         } = req.body;
 
         // 입력 검증
-        if (!studentName || !answers || totalScore === undefined) {
+        if (!student || !answers || score === undefined) {
             return res.status(400).json({
                 success: false,
                 message: '필수 데이터가 누락되었습니다.'
             });
         }
 
-        // 현재 시도 횟수 확인 및 업데이트
-        let currentAttempts = 0;
-        
-        const attemptResult = await pool.query(
-            'SELECT current_attempts FROM student_attempts WHERE student_name = $1',
-            [studentName]
-        );
-        
-        if (attemptResult.rows.length > 0) {
-            currentAttempts = attemptResult.rows[0].current_attempts;
-            // 시도 횟수 증가
-            await pool.query(
-                'UPDATE student_attempts SET current_attempts = $1, last_attempt_at = CURRENT_TIMESTAMP WHERE student_name = $2',
-                [currentAttempts + 1, studentName]
-            );
-        } else {
-            // 새 학생 등록
-            await pool.query(
-                'INSERT INTO student_attempts (student_name, current_attempts) VALUES ($1, 1)',
-                [studentName]
-            );
-        }
-        
-        const attemptNumber = currentAttempts + 1;
-        
-        // 최대 시도 횟수 확인
-        if (attemptNumber > 3) {
-            return res.status(400).json({
-                success: false,
-                message: '최대 시도 횟수를 초과했습니다.'
-            });
-        }
+        // 시도 횟수 업데이트
+        await pool.query(`
+            INSERT INTO exam_attempts (student_name, total_attempts, last_attempt_at)
+            VALUES ($1, $2, CURRENT_TIMESTAMP)
+            ON CONFLICT (student_name) 
+            DO UPDATE SET 
+                total_attempts = GREATEST(exam_attempts.total_attempts, $2),
+                last_attempt_at = CURRENT_TIMESTAMP
+        `, [student, attempt]);
 
         // 시험 결과 저장
         const examResult = await pool.query(`
             INSERT INTO exam_results (
                 student_name, attempt_number, total_score, percentage,
-                a_type_score, a_type_total, b_type_score, b_type_total,
-                c_type_score, c_type_total, time_spent, answers
-            ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
+                category_scores, answers, grading_details, time_spent
+            ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+            ON CONFLICT (student_name, attempt_number)
+            DO UPDATE SET
+                total_score = $3,
+                percentage = $4,
+                category_scores = $5,
+                answers = $6,
+                grading_details = $7,
+                time_spent = $8,
+                submitted_at = CURRENT_TIMESTAMP
             RETURNING id
         `, [
-            studentName,
-            attemptNumber,
-            totalScore,
+            student,
+            attempt,
+            score,
             percentage,
-            categoryScores['A형'].score,
-            categoryScores['A형'].total,
-            categoryScores['B형'].score,
-            categoryScores['B형'].total,
-            categoryScores['C형'].score,
-            categoryScores['C형'].total,
-            timeSpent,
-            JSON.stringify(answers)
+            JSON.stringify(categoryScores),
+            JSON.stringify(answers),
+            JSON.stringify(gradingDetails),
+            timeSpent
         ]);
 
         res.json({
             success: true,
             message: '시험 결과가 저장되었습니다.',
-            examId: examResult.rows[0].id,
-            attemptNumber: attemptNumber
+            examId: examResult.rows[0].id
         });
 
     } catch (error) {
@@ -321,6 +342,7 @@ app.post('/api/submit-exam', async (req, res) => {
 });
 
 // 모든 시험 결과 조회 (관리자용)
+// 시험 결과 조회 (관리자용 - 전체)
 app.get('/api/exam-results', async (req, res) => {
     try {
         const result = await pool.query(`
@@ -329,22 +351,37 @@ app.get('/api/exam-results', async (req, res) => {
                 attempt_number,
                 total_score,
                 percentage,
-                a_type_score,
-                a_type_total,
-                b_type_score,
-                b_type_total,
-                c_type_score,
-                c_type_total,
+                category_scores,
                 time_spent,
                 answers,
+                grading_details,
                 submitted_at
             FROM exam_results
             ORDER BY student_name, attempt_number
         `);
         
+        // JSON 문자열을 객체로 변환하고 필드명 매핑
+        const results = result.rows.map(row => ({
+            student: row.student_name,
+            attempt: row.attempt_number,
+            score: row.total_score,
+            percentage: row.percentage,
+            timeSpent: row.time_spent,
+            timestamp: row.submitted_at,
+            categoryScores: typeof row.category_scores === 'string' 
+                ? JSON.parse(row.category_scores) 
+                : row.category_scores,
+            answers: typeof row.answers === 'string' 
+                ? JSON.parse(row.answers) 
+                : row.answers,
+            gradingDetails: typeof row.grading_details === 'string' 
+                ? JSON.parse(row.grading_details) 
+                : row.grading_details
+        }));
+        
         res.json({
             success: true,
-            results: result.rows
+            results: results
         });
     } catch (error) {
         console.error('시험 결과 조회 오류:', error);
@@ -355,10 +392,136 @@ app.get('/api/exam-results', async (req, res) => {
     }
 });
 
-// 모든 시도 횟수 초기화 (관리자용)
-app.post('/api/reset-attempts', async (req, res) => {
+// 학생 개인 시험 결과 조회
+app.post('/api/student-results', async (req, res) => {
     try {
-        await pool.query('DELETE FROM student_attempts');
+        const { student } = req.body;
+        
+        if (!student) {
+            return res.status(400).json({
+                success: false,
+                message: '학생 이름이 필요합니다.'
+            });
+        }
+        
+        const result = await pool.query(`
+            SELECT 
+                student_name,
+                attempt_number,
+                total_score,
+                percentage,
+                category_scores,
+                time_spent,
+                answers,
+                grading_details,
+                submitted_at
+            FROM exam_results
+            WHERE student_name = $1
+            ORDER BY attempt_number
+        `, [student]);
+        
+        // JSON 문자열을 객체로 변환하고 필드명 매핑
+        const results = result.rows.map(row => ({
+            student: row.student_name,
+            attempt: row.attempt_number,
+            score: row.total_score,
+            percentage: row.percentage,
+            timeSpent: row.time_spent,
+            timestamp: row.submitted_at,
+            categoryScores: typeof row.category_scores === 'string' 
+                ? JSON.parse(row.category_scores) 
+                : row.category_scores,
+            answers: typeof row.answers === 'string' 
+                ? JSON.parse(row.answers) 
+                : row.answers,
+            gradingDetails: typeof row.grading_details === 'string' 
+                ? JSON.parse(row.grading_details) 
+                : row.grading_details
+        }));
+        
+        res.json({
+            success: true,
+            results: results
+        });
+    } catch (error) {
+        console.error('학생 결과 조회 오류:', error);
+        res.status(500).json({
+            success: false,
+            message: '시험 결과 조회 중 오류가 발생했습니다.'
+        });
+    }
+});
+
+// 시험 상세 결과 조회
+app.post('/api/exam-detail', async (req, res) => {
+    try {
+        const { student, attempt } = req.body;
+        
+        if (!student || !attempt) {
+            return res.status(400).json({
+                success: false,
+                message: '학생 이름과 시도 차수가 필요합니다.'
+            });
+        }
+        
+        const result = await pool.query(`
+            SELECT 
+                student_name,
+                attempt_number,
+                total_score,
+                percentage,
+                category_scores,
+                answers,
+                grading_details,
+                time_spent,
+                submitted_at
+            FROM exam_results
+            WHERE student_name = $1 AND attempt_number = $2
+        `, [student, attempt]);
+        
+        if (result.rows.length === 0) {
+            return res.status(404).json({
+                success: false,
+                message: '해당 시험 결과를 찾을 수 없습니다.'
+            });
+        }
+        
+        const row = result.rows[0];
+        const examResult = {
+            student: row.student_name,
+            attempt: row.attempt_number,
+            total_score: row.total_score,
+            percentage: row.percentage,
+            time_spent: row.time_spent,
+            submitted_at: row.submitted_at,
+            categoryScores: typeof row.category_scores === 'string' 
+                ? JSON.parse(row.category_scores) 
+                : row.category_scores,
+            answers: typeof row.answers === 'string' 
+                ? JSON.parse(row.answers) 
+                : row.answers,
+            gradingDetails: typeof row.grading_details === 'string' 
+                ? JSON.parse(row.grading_details) 
+                : row.grading_details
+        };
+        
+        res.json({
+            success: true,
+            result: examResult
+        });
+    } catch (error) {
+        console.error('시험 상세 조회 오류:', error);
+        res.status(500).json({
+            success: false,
+            message: '시험 상세 조회 중 오류가 발생했습니다.'
+        });
+    }
+});
+
+// 모든 시험 데이터 초기화 (관리자용)
+app.post('/api/reset-exam-data', async (req, res) => {
+    try {
+        await pool.query('DELETE FROM exam_attempts');
         await pool.query('DELETE FROM exam_results');
         
         res.json({
