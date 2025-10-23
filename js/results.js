@@ -1,48 +1,78 @@
-// 시험 결과 페이지 JavaScript
+// 시험 결과 페이지 JavaScript - PostgreSQL 전용
 
 document.addEventListener('DOMContentLoaded', function() {
     displayResults();
 });
 
-function displayResults() {
-    const resultsData = JSON.parse(sessionStorage.getItem('examResults'));
+async function displayResults() {
+    // URL 파라미터에서 학생명과 시도 차수 가져오기
+    const urlParams = new URLSearchParams(window.location.search);
+    const student = urlParams.get('student');
+    const attempt = urlParams.get('attempt');
     
-    if (!resultsData) {
-        alert('시험 결과 데이터가 없습니다.');
+    if (!student || !attempt) {
+        alert('시험 결과 정보가 없습니다.');
         window.location.href = 'index.html';
         return;
     }
     
-    const { student, answers, results, examData } = resultsData;
-    
+    try {
+        // PostgreSQL에서 시험 결과 가져오기
+        const response = await fetch('/api/exam-detail', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ student: student, attempt: parseInt(attempt) })
+        });
+        
+        const data = await response.json();
+        
+        if (!data.success) {
+            alert('시험 결과를 불러올 수 없습니다: ' + data.message);
+            window.location.href = 'index.html';
+            return;
+        }
+        
+        const examResult = data.result;
+        renderResults(examResult);
+        
+    } catch (error) {
+        console.error('시험 결과 로드 오류:', error);
+        alert('시험 결과를 불러오는 중 오류가 발생했습니다.');
+        window.location.href = 'index.html';
+    }
+}
+
+function renderResults(examResult) {
     // 기본 정보 표시
-    document.getElementById('studentName').textContent = student;
-    document.getElementById('totalScore').textContent = results.totalScore;
-    document.getElementById('scorePercentage').textContent = results.percentage + '%';
+    document.getElementById('studentName').textContent = examResult.student;
+    document.getElementById('totalScore').textContent = examResult.total_score;
+    document.getElementById('scorePercentage').textContent = examResult.percentage + '%';
     
     // 점수 바 업데이트
     const scoreBar = document.getElementById('scoreBar');
-    scoreBar.style.width = results.percentage + '%';
+    scoreBar.style.width = examResult.percentage + '%';
     
     // 점수에 따른 색상 변경
-    if (results.percentage >= 90) {
+    if (examResult.percentage >= 90) {
         scoreBar.className = 'score-fill excellent';
-    } else if (results.percentage >= 80) {
+    } else if (examResult.percentage >= 80) {
         scoreBar.className = 'score-fill good';
-    } else if (results.percentage >= 70) {
+    } else if (examResult.percentage >= 70) {
         scoreBar.className = 'score-fill average';
     } else {
         scoreBar.className = 'score-fill poor';
     }
     
     // 카테고리별 점수 표시
-    displayCategoryScores(results.categoryScores);
+    displayCategoryScores(examResult.categoryScores);
     
-    // 문제별 상세 결과 표시
-    displayDetailedResults(examData, answers, results);
+    // 문제별 상세 결과 표시 (채점 상세 정보 사용)
+    displayDetailedResults(examResult.gradingDetails, examResult.answers);
     
     // 통계 표시
-    displayStatistics(results);
+    displayStatistics(examResult);
 }
 
 function displayCategoryScores(categoryScores) {
@@ -68,14 +98,13 @@ function displayCategoryScores(categoryScores) {
     categoryContainer.innerHTML = html;
 }
 
-function displayDetailedResults(examData, answers, results) {
+function displayDetailedResults(gradingDetails, answers) {
     const detailContainer = document.getElementById('detailResults');
     let html = '';
     
-    // 채점 상세 정보가 있는 경우 사용
-    if (results.gradingDetails && results.gradingDetails.length > 0) {
-        results.gradingDetails.forEach((detail, index) => {
-            const question = examData.questions[index];
+    // PostgreSQL에서 가져온 채점 상세 정보 사용
+    if (gradingDetails && gradingDetails.length > 0) {
+        gradingDetails.forEach((detail, index) => {
             const scorePercentage = detail.maxPoints > 0 ? Math.round((detail.score / detail.maxPoints) * 100) : 0;
             const scoreClass = scorePercentage >= 80 ? 'correct' : scorePercentage >= 60 ? 'partial' : 'incorrect';
             
@@ -89,10 +118,7 @@ function displayDetailedResults(examData, answers, results) {
                         </div>
                     </div>
                     <div class="question-content">
-                        <p><strong>문제:</strong> ${question.question}</p>
                         <p><strong>제출 답안:</strong> ${formatAnswer(detail.userAnswer)}</p>
-                        ${question.correctAnswer ? `<p><strong>정답:</strong> ${formatAnswer(question.correctAnswer)}</p>` : ''}
-                        ${question.type === 'multiple' ? `<p><strong>선택지:</strong> ${question.options.join(', ')}</p>` : ''}
                         <div class="feedback-section">
                             <p class="feedback ${scoreClass}"><strong>채점 결과:</strong> ${detail.feedback}</p>
                             ${detail.needsReview ? '<p class="needs-review"><strong>수동 검토 필요</strong></p>' : ''}
@@ -102,27 +128,22 @@ function displayDetailedResults(examData, answers, results) {
             `;
         });
     } else {
-        // 기존 방식 (채점 상세 정보가 없는 경우)
-        examData.questions.forEach((question, index) => {
-            const userAnswer = answers[index] || '미답';
-            const isCorrect = checkAnswer(question, userAnswer);
-            
-            html += `
-                <div class="question-result ${isCorrect ? 'correct' : 'incorrect'}">
-                    <div class="question-header">
-                        <h4>문제 ${index + 1} (${question.category} - ${question.points}점)</h4>
-                        <span class="result-icon">${isCorrect ? '✓' : '✗'}</span>
+        // 채점 상세 정보가 없는 경우 기본 답안만 표시
+        if (answers && typeof answers === 'object') {
+            Object.keys(answers).forEach((questionIndex, index) => {
+                const answer = answers[questionIndex];
+                html += `
+                    <div class="question-result">
+                        <div class="question-header">
+                            <h4>문제 ${parseInt(questionIndex) + 1}</h4>
+                        </div>
+                        <div class="question-content">
+                            <p><strong>제출 답안:</strong> ${formatAnswer(answer)}</p>
+                        </div>
                     </div>
-                    <div class="question-content">
-                        <p><strong>문제:</strong> ${question.question}</p>
-                        <p><strong>제출 답안:</strong> ${formatAnswer(userAnswer)}</p>
-                        <p><strong>정답:</strong> ${formatAnswer(question.correctAnswer)}</p>
-                        ${question.type === 'multiple' ? `<p><strong>선택지:</strong> ${question.options.join(', ')}</p>` : ''}
-                        ${getAnswerFeedback(question, userAnswer, isCorrect)}
-                    </div>
-                </div>
-            `;
-        });
+                `;
+            });
+        }
     }
     
     detailContainer.innerHTML = html;
@@ -184,7 +205,7 @@ function getAnswerFeedback(question, userAnswer, isCorrect) {
     }
 }
 
-function displayStatistics(results) {
+function displayStatistics(examResult) {
     const statsContainer = document.getElementById('examStats');
     
     // 등급 계산

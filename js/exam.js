@@ -572,16 +572,8 @@ async function submitExam() {
     // 시험 결과 저장
     await saveExamResult(results);
     
-    // 결과 페이지로 이동
-    sessionStorage.setItem('examResults', JSON.stringify({
-        student: currentStudent,
-        attempt: currentAttempt,
-        answers: answers,
-        results: results,
-        examData: examData
-    }));
-    
-    window.location.href = 'results.html';
+    // 결과 페이지로 이동 (PostgreSQL에서 데이터 조회하도록 URL 파라미터 사용)
+    window.location.href = `results.html?student=${encodeURIComponent(currentStudent)}&attempt=${currentAttempt}`;
 }
 
 function calculateScore() {
