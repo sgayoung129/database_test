@@ -74,6 +74,70 @@ app.get('/api/health', async (req, res) => {
     }
 });
 
+// 데이터베이스 전체 검색 API (디버그용)
+app.get('/api/debug/tables', async (req, res) => {
+    try {
+        // 모든 테이블 목록 조회
+        const tablesResult = await pool.query(`
+            SELECT table_name, table_type 
+            FROM information_schema.tables 
+            WHERE table_schema = 'public'
+            ORDER BY table_name
+        `);
+        
+        const tableData = {};
+        
+        // 각 테이블의 데이터 조회
+        for (const table of tablesResult.rows) {
+            const tableName = table.table_name;
+            try {
+                // 테이블 구조 조회
+                const columnsResult = await pool.query(`
+                    SELECT column_name, data_type 
+                    FROM information_schema.columns 
+                    WHERE table_name = $1 AND table_schema = 'public'
+                    ORDER BY ordinal_position
+                `, [tableName]);
+                
+                // 데이터 개수 조회
+                const countResult = await pool.query(`SELECT COUNT(*) as count FROM ${tableName}`);
+                
+                // 최근 5개 데이터 조회 (가능한 경우)
+                let sampleData = [];
+                if (countResult.rows[0].count > 0) {
+                    const sampleResult = await pool.query(`SELECT * FROM ${tableName} LIMIT 5`);
+                    sampleData = sampleResult.rows;
+                }
+                
+                tableData[tableName] = {
+                    type: table.table_type,
+                    columns: columnsResult.rows,
+                    count: parseInt(countResult.rows[0].count),
+                    sampleData: sampleData
+                };
+            } catch (error) {
+                tableData[tableName] = {
+                    type: table.table_type,
+                    error: error.message
+                };
+            }
+        }
+        
+        res.json({
+            success: true,
+            tables: tableData,
+            totalTables: tablesResult.rows.length
+        });
+    } catch (error) {
+        console.error('데이터베이스 검색 오류:', error);
+        res.status(500).json({
+            success: false,
+            message: '데이터베이스 검색 중 오류가 발생했습니다.',
+            error: error.message
+        });
+    }
+});
+
 // 파일 업로드 설정
 const storage = multer.diskStorage({
     destination: function (req, file, cb) {
